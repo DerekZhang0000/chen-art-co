@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Chen Art Co — Custom Embroidery</title>
-<meta name="description" content="Chen Art Co is a small embroidery studio making custom, made-to-order stitched apparel — grad stoles, Greek letters, fandom art, and personal keepsakes." />
+<title>Chen Art Co - Custom Embroidery</title>
+<meta name="description" content="Chen Art Co is a small embroidery studio making custom, made-to-order apparel: grad stoles, Greek letters, fandom art, and personal keepsakes." />
 
 <link rel="icon" href="images/favicon.ico" sizes="any" />
 <link rel="icon" href="images/favicon-32.png" type="image/png" />
@@ -12,13 +12,13 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="css/style.css" />
 
 <!-- Social preview -->
-<meta property="og:title" content="Chen Art Co — Custom Embroidery" />
-<meta property="og:description" content="Made-to-order embroidered apparel — grad stoles, Greek letters, fandom art, and personal keepsakes, stitched by hand." />
+<meta property="og:title" content="Chen Art Co - Custom Embroidery" />
+<meta property="og:description" content="Made-to-order embroidered apparel: grad stoles, Greek letters, fandom art, and personal keepsakes, stitched by hand." />
 <meta property="og:image" content="images/chen-08.jpg" />
 <meta property="og:type" content="website" />
 </head>
@@ -31,15 +31,35 @@
       Chen Art Co
     </a>
     <nav class="main-nav" id="main-nav">
+      <a href="#shop">Shop</a>
       <a href="#work">Work</a>
       <a href="#process">Process</a>
       <a href="#custom">Custom Orders</a>
       <a href="#about">About</a>
       <a href="#contact" class="nav-cta">Contact</a>
     </nav>
-    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="header-actions">
+      <a class="instagram-link" href="https://instagram.com/arts.chen" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" rx="5" />
+          <circle cx="12" cy="12" r="4.2" />
+          <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none" />
+        </svg>
+        <span>@arts.chen</span>
+      </a>
+      <button class="cart-toggle" id="cart-toggle" aria-label="Open cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="9" cy="21" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="18" cy="21" r="1.4" fill="currentColor" stroke="none" />
+          <path d="M2.5 3h2.4l2.2 12.2a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6L21 7H6" />
+        </svg>
+        <span class="cart-label">Cart</span>
+        <span class="cart-count" id="cart-count" hidden>0</span>
+      </button>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -47,12 +67,14 @@
 
   <!-- Hero -->
   <section class="hero" id="top">
-    <img class="hero-media" src="images/chen-08.jpg" alt="Hand-embroidered sword and rose crest on a sage green crewneck" />
+    <video class="hero-media" autoplay muted loop playsinline poster="images/chen-video-02-poster.jpg">
+      <source src="videos/chen-video-02.mp4" type="video/mp4" />
+    </video>
     <div class="container">
       <div class="hero-inner">
         <span class="eyebrow hero-eyebrow">Custom embroidery studio</span>
         <h1>Wearable art,<br />stitched to order.</h1>
-        <p class="lede">Chen Art Co turns photos, fandoms, crests, and inside jokes into one-of-a-kind embroidered apparel — sewn one thread at a time, just for you.</p>
+        <p class="lede">Chen Art Co turns photos, fandoms, crests, and inside jokes into one-of-a-kind embroidered apparel, sewn one thread at a time.</p>
         <div class="hero-actions">
           <a href="#custom" class="btn btn-primary">Start a custom order</a>
           <a href="#work" class="btn btn-outline">See the work</a>
@@ -85,12 +107,29 @@
       <div>
         <span class="eyebrow">What we do</span>
         <h2>Every piece starts as your idea.</h2>
-        <p>Send a reference, a design, or just a vibe — a family crest, a favorite character, your organization's letters, a name you want to keep close. It gets digitized and stitched onto the garment of your choice, on a home embroidery machine, one piece at a time.</p>
+        <p>Send a reference, a design, or just an idea: a family crest, a favorite character, your organization's letters, a name you want to keep close. We digitize it and stitch it onto whatever you choose, one piece at a time.</p>
         <ul class="intro-list">
           <li>Original artwork, logos, and fan art turned into clean embroidery files</li>
-          <li>Your garment or ours — sweatshirts, tees, jackets, stoles, and more</li>
+          <li>Your garment or ours: sweatshirts, tees, jackets, stoles, and more</li>
           <li>Small batch and one-off orders, packed and shipped with care</li>
         </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shop -->
+  <section class="shop-section" id="shop">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Ready to ship</span>
+        <h2>Take one home.</h2>
+        <p>A few already-finished, one-of-a-kind pieces. Once one sells, it's gone for good.</p>
+      </div>
+      <div class="checkout-banner" id="checkout-success" hidden>
+        Thanks for your order! You'll get an email receipt from Stripe shortly.
+      </div>
+      <div class="shop-grid" id="shop-grid">
+        <p class="shop-loading">Loading pieces…</p>
       </div>
     </div>
   </section>
@@ -101,107 +140,88 @@
       <div class="section-head">
         <span class="eyebrow">Selected work</span>
         <h2>A few favorites from the hoop.</h2>
-        <p>Grad stoles, Greek letters, custom crests, and fandom pieces — click anything to take a closer look.</p>
+        <p>Grad stoles, Greek letters, custom crests, and fandom pieces. Click anything for a closer look.</p>
       </div>
 
       <div class="gallery-grid" id="gallery-grid">
         <button class="gallery-item wide" data-full="images/chen-06.jpg" data-type="image">
           <img src="images/chen-06.jpg" alt="Sword and blue rose crest embroidered on a navy Champion crewneck" loading="lazy" />
-          <span class="cap">Custom crest — navy crewneck</span>
         </button>
 
         <button class="gallery-item tall" data-full="videos/chen-video-04.mp4" data-type="video" data-poster="images/chen-video-04-poster.jpg">
           <img src="images/chen-video-04-poster.jpg" alt="Video: stitching a sword and rose crest" loading="lazy" />
           <span class="play-badge">▶</span>
-          <span class="cap">In progress — sword &amp; rose crest</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-14.jpg" data-type="image">
           <img src="images/chen-14.jpg" alt="Ohio outline embroidered on a white tee with Japanese lettering" loading="lazy" />
-          <span class="cap">Personalized tee</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-11.jpg" data-type="image">
           <img src="images/chen-11.jpg" alt="Gold wheel and wing emblem embroidered on a grey crewneck" loading="lazy" />
-          <span class="cap">Custom emblem — gold thread</span>
         </button>
 
         <button class="gallery-item" data-full="videos/chen-video-02.mp4" data-type="video" data-poster="images/chen-video-02-poster.jpg">
           <img src="images/chen-video-02-poster.jpg" alt="Video: stitching a graduation stole crest reading Class of 2024" loading="lazy" />
           <span class="play-badge">▶</span>
-          <span class="cap">In progress — grad stole crest</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-02.jpg" data-type="image">
           <img src="images/chen-02.jpg" alt="Graduation stole embroidered with Greek letters and a sorority crest" loading="lazy" />
-          <span class="cap">Graduation stole</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-15.jpg" data-type="image">
           <img src="images/chen-15.jpg" alt="Grinning skull-style face embroidered on a grey tee" loading="lazy" />
-          <span class="cap">Original character art</span>
         </button>
 
         <button class="gallery-item wide" data-full="images/chen-07.jpg" data-type="image">
           <img src="images/chen-07.jpg" alt="Gold necklace-style embroidery design on a grey crewneck, in packaging" loading="lazy" />
-          <span class="cap">Ready to ship</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-04.jpg" data-type="image">
           <img src="images/chen-04.jpg" alt="Small blue floral crest embroidered on a white tee" loading="lazy" />
-          <span class="cap">Small crest — white tee</span>
         </button>
 
         <button class="gallery-item tall" data-full="videos/chen-video-03.mp4" data-type="video" data-poster="images/chen-video-03-poster.jpg">
           <img src="images/chen-video-03-poster.jpg" alt="Video: stitching a colorful anime-style character portrait" loading="lazy" />
           <span class="play-badge">▶</span>
-          <span class="cap">In progress — character portrait</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-16.jpg" data-type="image">
           <img src="images/chen-16.jpg" alt="Close-up of a colorful anime-style character portrait embroidery" loading="lazy" />
-          <span class="cap">Fandom portrait, up close</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-09.jpg" data-type="image">
           <img src="images/chen-09.jpg" alt="Anime-style character patch embroidered on a black sweatshirt sleeve" loading="lazy" />
-          <span class="cap">Sleeve patch</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-12.jpg" data-type="image">
           <img src="images/chen-12.jpg" alt="Gold necklace-style embroidery design on a grey crewneck" loading="lazy" />
-          <span class="cap">Custom emblem, back view</span>
         </button>
 
         <button class="gallery-item" data-full="videos/chen-video-01.mp4" data-type="video" data-poster="images/chen-video-01-poster.jpg">
           <img src="images/chen-video-01-poster.jpg" alt="Video: stitching Greek letters onto a graduation stole" loading="lazy" />
           <span class="play-badge">▶</span>
-          <span class="cap">In progress — stole letters</span>
         </button>
 
         <button class="gallery-item wide" data-full="images/chen-05.jpg" data-type="image">
           <img src="images/chen-05.jpg" alt="Finished embroidered sweatshirt packaged in a branded box" loading="lazy" />
-          <span class="cap">Packed up and ready</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-10.jpg" data-type="image">
           <img src="images/chen-10.jpg" alt="Gold wheel and wing emblem embroidered on a grey crewneck, alternate angle" loading="lazy" />
-          <span class="cap">Custom emblem, detail</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-13.jpg" data-type="image">
           <img src="images/chen-13.jpg" alt="Gold necklace-style embroidery design, close detail" loading="lazy" />
-          <span class="cap">Gold thread detail</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-01.jpg" data-type="image">
           <img src="images/chen-01.jpg" alt="Embroidery machine stitching Greek letters onto satin stole ribbon" loading="lazy" />
-          <span class="cap">On the machine</span>
         </button>
 
         <button class="gallery-item" data-full="images/chen-03.jpg" data-type="image">
           <img src="images/chen-03.jpg" alt="Close-up of an embroidery machine stitching a detailed patch" loading="lazy" />
-          <span class="cap">Stitch by stitch</span>
         </button>
       </div>
     </div>
@@ -240,13 +260,13 @@
       <div>
         <span class="eyebrow">Custom orders</span>
         <h2>Get something made just for you.</h2>
-        <p>Every commission is one-on-one — here's how it usually goes.</p>
+        <p>Every commission is one-on-one. Here's how it usually goes.</p>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
             <span class="step-body">
               <h4>Tell us the idea</h4>
-              <p>A photo, a logo, fan art, letters, a name — whatever you want stitched, and what you'd like it stitched on.</p>
+              <p>A photo, a logo, fan art, letters, a name: whatever you want stitched, and what you'd like it on.</p>
             </span>
           </li>
           <li>
@@ -272,7 +292,7 @@
           </li>
         </ol>
         <div class="note-box">
-          <strong>Have reference images?</strong> The form below doesn't accept attachments yet — after you submit, reply to the confirmation email (or email us directly) with any photos or links.
+          <strong>Have reference images?</strong> The form below doesn't accept attachments yet. After you submit, reply to the confirmation email (or email us directly) with any photos or links.
         </div>
       </div>
 
@@ -328,8 +348,8 @@
       <div>
         <span class="eyebrow">About the studio</span>
         <h2>A small studio, made by hand.</h2>
-        <p>Chen Art Co is a one-person embroidery studio — every design is drawn up, digitized, and stitched in-house, on a home embroidery machine, order by order. What started as gifts for friends turned into custom stoles, sweatshirts, and keepsakes for anyone with an idea worth stitching down.</p>
-        <p>No two orders look the same, and that's the point — if you can describe it (or draw it, or send a screenshot), it can probably be embroidered.</p>
+        <p>Chen Art Co is a one-person embroidery studio. Every design gets drawn up, digitized, and stitched in-house on a home embroidery machine, one order at a time. What started as gifts for friends turned into custom stoles, sweatshirts, and keepsakes for anyone with an idea worth stitching down.</p>
+        <p>No two orders look the same, and that's the point. Describe it, draw it, or send a screenshot, and it can probably be embroidered.</p>
         <a href="#custom" class="btn btn-outline-dark">Start your piece</a>
       </div>
     </div>
@@ -354,11 +374,12 @@
           <img class="logo-mark" src="images/logo.png" alt="Chen Art Co" />
           Chen Art Co
         </a>
-        <p>Custom, made-to-order embroidery — grad stoles, Greek letters, fandom art, and personal keepsakes, stitched one piece at a time.</p>
+        <p>Custom, made-to-order embroidery: grad stoles, Greek letters, fandom art, and personal keepsakes, stitched one piece at a time.</p>
       </div>
       <div class="footer-col">
         <h4>Explore</h4>
         <ul>
+          <li><a href="#shop">Shop</a></li>
           <li><a href="#work">Work</a></li>
           <li><a href="#process">Process</a></li>
           <li><a href="#custom">Custom Orders</a></li>
@@ -368,8 +389,7 @@
       <div class="footer-col">
         <h4>Get in touch</h4>
         <ul>
-          <!-- TODO: replace with the real contact email -->
-          <li><a href="mailto:hello@chenartco.com">hello@chenartco.com</a></li>
+          <li><a href="mailto:Johnc4923@gmail.com">Johnc4923@gmail.com</a></li>
           <li><a href="https://instagram.com/arts.chen" target="_blank" rel="noopener">@arts.chen</a></li>
         </ul>
       </div>
@@ -386,6 +406,28 @@
   <div class="lightbox-content" id="lightbox-content"></div>
 </div>
 
+<div class="cart-overlay" id="cart-overlay" hidden></div>
+<aside class="cart-drawer" id="cart-drawer" aria-label="Shopping cart" aria-hidden="true">
+  <div class="cart-drawer-head">
+    <h3>Your cart</h3>
+    <button class="cart-close" id="cart-close" aria-label="Close cart">&times;</button>
+  </div>
+  <div class="cart-items" id="cart-items">
+    <p class="cart-empty">Your cart is empty.</p>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <span id="cart-subtotal">$0.00</span>
+    </div>
+    <button class="btn btn-primary cart-checkout" id="cart-checkout" disabled>Checkout</button>
+    <p class="cart-error" id="cart-error" hidden></p>
+  </div>
+</aside>
+
+<script src="js/util.js"></script>
+<script src="js/cart.js"></script>
 <script src="js/main.js"></script>
+<script src="js/shop.js"></script>
 </body>
 </html>

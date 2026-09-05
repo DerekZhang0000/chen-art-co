@@ -1,0 +1,26 @@
+[
+  {
+    "id": "gold-thread-crewneck",
+    "name": "Gold Thread Emblem Crewneck",
+    "price": 6800,
+    "image": "images/chen-07.jpg",
+    "description": "One-of-a-kind gold thread emblem, hand-finished on a heather grey crewneck. Size L.",
+    "stock": 1
+  },
+  {
+    "id": "sword-rose-crewneck",
+    "name": "Sword & Rose Crest Crewneck",
+    "price": 7200,
+    "image": "images/chen-06.jpg",
+    "description": "Custom sword-and-rose crest embroidered on a navy Champion crewneck. Size M.",
+    "stock": 1
+  },
+  {
+    "id": "grinning-face-tee",
+    "name": "Grinning Face Tee",
+    "price": 3800,
+    "image": "images/chen-15.jpg",
+    "description": "Original character embroidery on a soft grey tee. Size L.",
+    "stock": 3
+  }
+]

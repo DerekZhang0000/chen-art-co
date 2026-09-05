@@ -1,3 +1,10 @@
+# Original, unedited source photos/videos - not used by the site.
+# See README.md for why these are kept locally but not committed.
+Assets/
+
 # OS cruft
 .DS_Store
 Thumbs.db
+
+# Test dependencies (dev-only, never shipped)
+node_modules/

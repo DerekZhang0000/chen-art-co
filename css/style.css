@@ -171,14 +171,26 @@ section { padding: 96px 0; }
 }
 .main-nav a:hover::after { transform: scaleX(1); }
 
-.nav-cta {
+.main-nav a.nav-cta {
   background: var(--text);
   color: #fff !important;
-  padding: 12px 28px;
+  padding: 12px 22px;
   border-radius: var(--radius);
   font-weight: 600;
+  transition: background 0.2s ease;
 }
 .nav-cta::after { display: none; }
+
+.main-nav a.nav-cta:hover {
+  background: linear-gradient(90deg, #ff0000, #ff9900, #ffee00, #33ff00, #00c8ff, #7a00ff, #ff0000);
+  background-size: 300% 100%;
+  animation: nav-cta-rainbow 3s linear infinite;
+}
+
+@keyframes nav-cta-rainbow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
 
 .header-actions {
   display: flex;

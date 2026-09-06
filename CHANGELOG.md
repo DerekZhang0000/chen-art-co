@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased — 2026-09-06
+## 2026-09-06 — Test Coverage Update
+
+- Added unit tests for the custom order email function (`tests/send-order.test.js`): missing config, malformed form body, missing required fields, multi-seller sending, custom `FROM_EMAIL`, and Resend error handling.
+- Added a test asserting the checkout-success URL param is cleared, not just that the cart/banner update.
+- Stripe checkout already had full test coverage (`tests/create-checkout-session.test.js`) — no gaps found there.
+
+## 2026-09-06 — Custom Order Email Setup
 
 - Custom order form now emails you directly via a Cloudflare Pages Function + Resend (`functions/api/send-order.js`), replacing Formspree.
 - Branding: "Chen Art Co" → "Chen Art Co." site-wide.

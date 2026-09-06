@@ -195,6 +195,9 @@ test("shop: ?checkout=success clears the cart and shows the banner", async () =>
 
   assert.equal(dom.window.document.getElementById("checkout-success").hidden, false);
   assert.equal(dom.window.localStorage.getItem("chenArtCart"), "{}");
+  // The success param must not survive a refresh, or the banner would show forever.
+  assert.equal(dom.window.location.search, "");
+  assert.equal(dom.window.location.hash, "#shop");
 });
 
 // ---------- sanitizing a stale saved cart ----------

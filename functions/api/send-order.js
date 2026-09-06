@@ -1,0 +1,82 @@
+// Cloudflare Pages Function: POST /api/send-order
+//
+// Receives the custom-order form submission and emails it to the seller
+// via Resend, instead of relying on a third-party form service.
+//
+// Requires these set as environment variables/secrets on the Cloudflare
+// Pages project (and in .dev.vars locally) - see README.md:
+//   RESEND_API_KEY  - from resend.com
+//   SELLER_EMAIL    - where order requests get sent; comma-separate to
+//                     notify multiple addresses (e.g. "a@x.com,b@y.com")
+//   FROM_EMAIL      - optional; the Resend "from" address. Without a
+//                     verified domain in Resend, the default
+//                     onboarding@resend.dev sender only works if
+//                     SELLER_EMAIL is the address your Resend account
+//                     itself is registered with.
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+
+  if (!env.RESEND_API_KEY || !env.SELLER_EMAIL) {
+    return jsonResponse({ error: "The order form isn't configured yet." }, 500);
+  }
+
+  let form;
+  try {
+    form = await request.formData();
+  } catch (err) {
+    return jsonResponse({ error: "Invalid form submission." }, 400);
+  }
+
+  const name = (form.get("name") || "").toString().trim();
+  const email = (form.get("email") || "").toString().trim();
+  const garment = (form.get("garment") || "").toString().trim();
+  const idea = (form.get("idea") || "").toString().trim();
+  const timeline = (form.get("timeline") || "").toString().trim();
+  const budget = (form.get("budget") || "").toString().trim();
+
+  if (!name || !email || !garment || !idea) {
+    return jsonResponse({ error: "Please fill in all required fields." }, 400);
+  }
+
+  const fromEmail = env.FROM_EMAIL || "onboarding@resend.dev";
+  const sellerEmails = env.SELLER_EMAIL.split(",").map((s) => s.trim()).filter(Boolean);
+
+  const lines = [
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Garment: ${garment}`,
+    `Idea: ${idea}`,
+    `Timeline: ${timeline || "(not specified)"}`,
+    `Budget: ${budget || "(not specified)"}`,
+  ];
+
+  const resendRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: fromEmail,
+      to: sellerEmails,
+      reply_to: email,
+      subject: `Custom order request from ${name}`,
+      text: lines.join("\n"),
+    }),
+  });
+
+  if (!resendRes.ok) {
+    const errorBody = await resendRes.json().catch(() => ({}));
+    return jsonResponse({ error: errorBody.message || "Couldn't send the request. Please email us directly." }, 502);
+  }
+
+  return jsonResponse({ ok: true });
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}

@@ -115,30 +115,22 @@ function dispatchSubmit(dom, form) {
   return event;
 }
 
-test("main: submitting with the placeholder Formspree action just warns and does not intercept the submit", () => {
+test("main: submitting the order form intercepts the submit and posts to the configured action", () => {
   const dom = setup();
   const { document } = dom.window;
   const form = document.getElementById("order-form");
-  assert.match(form.getAttribute("action"), /YOUR_FORM_ID/); // sanity check on the repo's current pre-launch state
+  assert.equal(form.getAttribute("action"), "/api/send-order"); // sanity check on the repo's current pre-launch state
 
-  const warnings = [];
-  const originalWarn = dom.window.console.warn;
-  dom.window.console.warn = (msg) => warnings.push(msg);
+  dom.window.fetch = async () => new Promise(() => {}); // never resolves; we only care that it was called
 
-  try {
-    const event = dispatchSubmit(dom, form);
-    assert.equal(event.defaultPrevented, false);
-    assert.ok(warnings.some((w) => /placeholder/i.test(w)));
-  } finally {
-    dom.window.console.warn = originalWarn;
-  }
+  const event = dispatchSubmit(dom, form);
+  assert.equal(event.defaultPrevented, true);
 });
 
 test("main: successful submission shows the thank-you message and resets the form", async () => {
   const dom = setup();
   const { document } = dom.window;
   const form = document.getElementById("order-form");
-  form.setAttribute("action", "https://formspree.io/f/real123");
   document.getElementById("name").value = "Ada";
 
   dom.window.fetch = async () => ({ ok: true });
@@ -157,7 +149,6 @@ test("main: a non-ok response shows the fallback error text", async () => {
   const dom = setup();
   const { document } = dom.window;
   const form = document.getElementById("order-form");
-  form.setAttribute("action", "https://formspree.io/f/real123");
   dom.window.fetch = async () => ({ ok: false });
 
   dispatchSubmit(dom, form);
@@ -172,7 +163,6 @@ test("main: a network-level fetch rejection shows the same fallback error text",
   const dom = setup();
   const { document } = dom.window;
   const form = document.getElementById("order-form");
-  form.setAttribute("action", "https://formspree.io/f/real123");
   dom.window.fetch = async () => { throw new Error("network down"); };
 
   dispatchSubmit(dom, form);

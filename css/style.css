@@ -317,8 +317,8 @@ section { padding: 96px 0; }
 }
 
 video.hero-media {
-  filter: blur(7px);
-  transform: scale(1.02);
+  filter: blur(12px);
+  transform: scale(1.04);
 }
 
 .hero::before {

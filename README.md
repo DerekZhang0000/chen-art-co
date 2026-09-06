@@ -7,13 +7,25 @@ A static website for the Chen Art Co embroidery studio, plus a small shop with r
 A few placeholders need to be swapped for the real thing:
 
 1. **Contact info** — in `index.html`, search for `hello@chenartco.com` (in the footer) and replace with the real email.
-2. **Custom order form** — the form on the page posts to [Formspree](https://formspree.io), a free service that emails you form submissions without needing a backend.
-   - Create a free Formspree account and a new form.
-   - Copy the endpoint it gives you (looks like `https://formspree.io/f/abcd1234`).
-   - In `index.html`, find `action="https://formspree.io/f/YOUR_FORM_ID"` and replace `YOUR_FORM_ID` with your real ID.
-   - Free tier covers 50 submissions/month, which is plenty to start.
+2. **Custom order form** — see "Custom order emails" below.
 3. **Shop / Stripe** — see the "Accepting payments" section below. Without this set up, the Shop section will show real products but checkout will fail with an error.
 4. **Copy** — the "About" section and step-by-step process text are generic placeholders. Swap in real details (turnaround time, pricing if you want to list it, your own story).
+
+## Custom order emails
+
+The Custom Orders form posts to `functions/api/send-order.js`, a Cloudflare Pages Function that emails the submission to you via [Resend](https://resend.com) — no third-party form service needed.
+
+**One-time setup:**
+
+1. Create a free [Resend account](https://resend.com) and grab an API key (Dashboard → API Keys).
+2. In your Cloudflare Pages project: **Settings → Environment variables**, add as **Secrets**:
+   - `RESEND_API_KEY` — the key from step 1.
+   - `SELLER_EMAIL` — the address order requests should land in. Comma-separate multiple addresses (e.g. `a@x.com,b@y.com`) to notify more than one inbox.
+3. Redeploy (or it'll pick these up on the next deploy).
+
+By default, emails send `from` Resend's shared `onboarding@resend.dev` address, which can only deliver to the email your Resend account itself is registered with. To send to any `SELLER_EMAIL`, verify a domain in Resend (Dashboard → Domains — this is a DNS step, easy if the domain is already on Cloudflare) and set a `FROM_EMAIL` secret using that domain (e.g. `orders@chenart.co`).
+
+**Testing locally:** add `RESEND_API_KEY`, `SELLER_EMAIL`, and (optionally) `FROM_EMAIL` to `.dev.vars`, then submit the form while running `npm run dev`.
 
 ## Accepting payments (the Shop section)
 
@@ -71,13 +83,13 @@ Keep images under ~2000px wide so the site stays fast — most photo editors and
 
 ## Running it locally
 
-The Shop section fetches `data/products.json` at load time, which browsers block over a plain `file://` URL — so opening `index.html` directly will show "Couldn't load the shop" (everything else on the page works fine that way). To see the Shop locally, run a real local server from this folder:
+The Shop section fetches `data/products.json` at load time, which browsers block over a plain `file://` URL — so opening `index.html` directly will show "Couldn't load the shop" (everything else on the page works fine that way). To see the Shop (and test checkout) locally, run:
 
 ```
 npm.cmd run dev
 ```
 
-(one-time setup: `npm.cmd install`, same as below) then visit the URL it prints — this uses `live-server`, so the browser auto-refreshes whenever you save a file. Note that the **checkout button** still won't complete locally unless you're also running Cloudflare's local dev tool (`npx wrangler pages dev .`, which emulates the Pages Function and reads a local `.dev.vars` file for `STRIPE_SECRET_KEY`) — for everyday content edits, `npm run dev` is enough.
+This runs Cloudflare's local dev tool (`wrangler pages dev .`), which serves the site and emulates the Pages Function. For the checkout button to actually complete, add a `.dev.vars` file in the project root with `STRIPE_SECRET_KEY=sk_test_...` (a test-mode key from your Stripe dashboard).
 
 ## Running tests
 

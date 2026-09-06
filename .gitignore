@@ -8,3 +8,8 @@ Thumbs.db
 
 # Test dependencies (dev-only, never shipped)
 node_modules/
+
+.wrangler/
+
+# Local secrets for `wrangler pages dev` - never commit real keys
+.dev.vars

@@ -232,6 +232,7 @@
     cart = {};
     saveCart();
     if (checkoutBanner) checkoutBanner.hidden = false;
+    window.history.replaceState({}, "", window.location.pathname + window.location.hash);
   }
 
   fetch("data/products.json")

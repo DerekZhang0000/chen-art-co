@@ -4,10 +4,9 @@
   "description": "Chen Art Co website - static site with a Cloudflare Pages Function for Stripe checkout.",
   "scripts": {
     "test": "node --test",
-    "dev": "live-server ."
+    "dev": "npx.cmd wrangler pages dev ."
   },
   "devDependencies": {
-    "jsdom": "^25.0.0",
-    "live-server": "^1.2.2"
+    "jsdom": "^25.0.0"
   }
 }

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Down for maintenance - Chen Art Co.</title>
+<meta name="robots" content="noindex" />
+
+<!--
+  Deliberately self-contained (inline styles, no external requests other
+  than the logo, which functions/_middleware.js explicitly allows through
+  during maintenance) - this page is served in place of the whole site
+  while maintenance-mode is on.
+-->
+<style>
+  :root {
+    --text: #000000;
+    --background: #ffffff;
+    --primary: #ff0000;
+    --secondary: #22062a;
+    --accent: #a787ac;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background);
+    color: var(--text);
+    font-family: Georgia, "Times New Roman", serif;
+    padding: 24px;
+    text-align: center;
+  }
+  .card { max-width: 440px; }
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+  .brand img { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; }
+  h1 {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-weight: 700;
+    font-size: 1.75rem;
+    margin: 0 0 12px;
+  }
+  p { margin: 0 0 20px; line-height: 1.6; color: #333333; }
+  .contact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .contact a {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text);
+    text-decoration: none;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .contact a:hover { color: var(--primary); }
+  .contact svg { width: 20px; height: 20px; flex: none; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <img src="images/logo.png" alt="Chen Art Co." />
+      <span>Chen Art Co.</span>
+    </div>
+    <h1>We'll be back soon!</h1>
+    <p>We're making a few improvements to give you the best experience. Say hi in the meantime:</p>
+    <div class="contact">
+      <a href="https://instagram.com/arts.chen" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
+          <defs>
+            <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#feda75" />
+              <stop offset="15%" stop-color="#fa7e1e" />
+              <stop offset="45%" stop-color="#d62976" />
+              <stop offset="70%" stop-color="#962fbf" />
+              <stop offset="100%" stop-color="#4f5bd5" />
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#instagram-gradient)" />
+          <circle cx="12" cy="12" r="4.2" stroke="url(#instagram-gradient)" />
+          <circle cx="17.4" cy="6.6" r="1.1" fill="url(#instagram-gradient)" stroke="none" />
+        </svg>
+        <span>@arts.chen</span>
+      </a>
+      <a href="mailto:Johnc4923@gmail.com">Johnc4923@gmail.com</a>
+    </div>
+  </div>
+</body>
+</html>

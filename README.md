@@ -75,6 +75,24 @@ Stock now updates automatically when a sale completes, instead of needing a manu
 
 **Testing locally:** once `wrangler.toml`'s `[[d1_databases]]` block exists, `npm run dev` auto-provisions a local D1 (no cloud credentials needed) — see "Running it locally" below for the one-time local schema/seed step. To test the webhook itself, install the [Stripe CLI](https://docs.stripe.com/stripe-cli), run `stripe listen --forward-to localhost:8788/api/stripe-webhook` (copy the local webhook secret it prints into `.dev.vars` as `STRIPE_WEBHOOK_SECRET`), then `stripe trigger checkout.session.completed`.
 
+## Maintenance mode (LaunchDarkly)
+
+The whole site (pages *and* the Shop's API - checkout, order form, everything) can be switched to a "down for maintenance" page from a single toggle, without a deploy. It's driven by a feature flag in [LaunchDarkly](https://launchdarkly.com), checked on every request by `functions/_middleware.js`.
+
+**One-time setup:**
+
+1. Create a free [LaunchDarkly account](https://launchdarkly.com) and a project.
+2. In that project, create a **boolean flag** with the key `maintenance-mode` (defaulting to **off**).
+3. Grab the environment's **client-side ID** (Account settings → Projects → your environment). This is *not* a secret key - it's the same ID that would be safe to embed in a browser, so it can go in as a plain environment variable rather than a Secret.
+4. In your Cloudflare Pages project: **Settings → Environment variables** → add `LD_CLIENT_SIDE_ID` (Production and Preview) with that ID.
+5. Redeploy (or it'll pick it up on the next deploy).
+
+To take the site down: flip `maintenance-mode` to **on** in the LaunchDarkly dashboard - takes effect within ~20 seconds (how long a check is cached for), no redeploy needed. Flip it back off to bring the site back.
+
+If `LD_CLIENT_SIDE_ID` isn't set, or LaunchDarkly can't be reached, the site behaves as if the flag is off (fails open) - a LaunchDarkly outage should never accidentally take the site down.
+
+**Testing locally:** add `LD_CLIENT_SIDE_ID` to `.dev.vars`, run `npm run dev`, then toggle the flag in the LaunchDarkly dashboard and reload.
+
 ## Editing content
 
 Everything is in `index.html` — it's one page split into sections (`Hero`, `Shop`, `Work`/gallery, `Process`, `Custom Orders`, `About`, `Footer`). To add a new photo to the gallery:
@@ -152,9 +170,12 @@ wrangler.toml                           Cloudflare config - declares the D1 data
 db/schema.sql                           D1 table definitions (live stock + processed webhook events)
 db/seed.sql                             starting stock values, loaded into D1 once
 functions/_lib/inventory.js             shared helper: merges products.json with live D1 stock
+functions/_lib/launchdarkly.js          shared helper: checks a LaunchDarkly flag, cached briefly
+functions/_middleware.js                runs on every request; serves maintenance.html when the flag is on
 functions/api/products.js               Cloudflare Pages Function: GET /api/products (catalog + live stock)
 functions/api/create-checkout-session.js  Cloudflare Pages Function that creates the Stripe Checkout session
 functions/api/stripe-webhook.js         Cloudflare Pages Function that decrements D1 stock on a completed sale
+maintenance.html                        static "down for maintenance" page, served by functions/_middleware.js
 tests/                                  unit tests (run with `npm test`)
 images/                                  photos, video posters, and favicon
 videos/                                  video clips used in the gallery and Process section

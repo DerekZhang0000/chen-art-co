@@ -7,14 +7,20 @@
 // what gets charged.
 //
 // Requires a STRIPE_SECRET_KEY environment variable/secret set on the
-// Cloudflare Pages project (Settings -> Environment variables). See
-// README.md for setup steps.
+// Cloudflare Pages project (Settings -> Environment variables), and a D1
+// database binding named `DB` for live stock. See README.md for setup steps.
+
+import { fetchCatalog, mergeLiveStock } from "../_lib/inventory.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   if (!env.STRIPE_SECRET_KEY) {
     return jsonResponse({ error: "Stripe isn't configured yet on this deployment." }, 500);
+  }
+
+  if (!env.DB) {
+    return jsonResponse({ error: "Inventory isn't configured yet on this deployment." }, 500);
   }
 
   let body;
@@ -30,11 +36,13 @@ export async function onRequestPost(context) {
   }
 
   const url = new URL(request.url);
-  const productsRes = await fetch(`${url.origin}/data/products.json`);
-  if (!productsRes.ok) {
+  let products;
+  try {
+    products = await fetchCatalog(url.origin);
+  } catch (err) {
     return jsonResponse({ error: "Could not load the product catalog." }, 500);
   }
-  const products = await productsRes.json();
+  products = await mergeLiveStock(products, env.DB);
 
   const result = buildLineItems(items, products, url.origin);
   if (result.error) {
@@ -46,6 +54,7 @@ export async function onRequestPost(context) {
     success_url: `${url.origin}/?checkout=success#shop`,
     cancel_url: `${url.origin}/?checkout=cancel#shop`,
     line_items: result.lineItems,
+    metadata: { items: JSON.stringify(result.items) },
   };
 
   const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -124,7 +133,10 @@ export function buildLineItems(items, products, origin) {
     });
   }
 
-  return { lineItems };
+  return {
+    lineItems,
+    items: Array.from(quantities, ([id, qty]) => ({ id, qty })),
+  };
 }
 
 // Stripe's API takes application/x-www-form-urlencoded bodies with

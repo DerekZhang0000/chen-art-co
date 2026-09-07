@@ -1,7 +1,7 @@
 {
   "name": "chen-art-co",
   "private": true,
-  "description": "Chen Art Co website - static site with a Cloudflare Pages Function for Stripe checkout.",
+  "description": "Chen Art Co. website - static site with a Cloudflare Pages Function for Stripe checkout.",
   "scripts": {
     "test": "node --test",
     "dev": "npx.cmd wrangler pages dev ."

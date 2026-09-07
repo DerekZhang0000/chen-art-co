@@ -12,6 +12,27 @@ const products = [
   { id: "c", name: "C", price: 500, image: "images/c.jpg", stock: 0 },
 ];
 
+// Hand-rolled D1 stub matching the .prepare(sql).bind(...ids).all() shape
+// mergeLiveStock() uses - no real D1/miniflare needed, same philosophy as
+// stubbing globalThis.fetch elsewhere in this file. By default it mirrors
+// the `products` fixture's stock values, so existing assertions written
+// against `products` stay valid once live D1 stock is merged in.
+function fakeDb(stockById) {
+  return {
+    prepare(sql) {
+      return {
+        bind(...ids) {
+          if (!/SELECT/i.test(sql)) throw new Error("unexpected DB call: " + sql);
+          const results = ids.filter((id) => id in stockById).map((id) => ({ id, stock: stockById[id] }));
+          return { all: async () => ({ results }) };
+        },
+      };
+    },
+  };
+}
+
+const DEFAULT_DB = fakeDb({ a: 1, b: 3, c: 0 });
+
 // ---------- buildLineItems ----------
 
 test("buildLineItems: unknown id", async () => {
@@ -114,6 +135,16 @@ test("buildLineItems: correct Stripe line-item shape for multiple valid items", 
   ]);
 });
 
+test("buildLineItems: also returns the aggregated {id, qty} pairs for webhook metadata", async () => {
+  const { buildLineItems } = await fnPromise;
+  const result = buildLineItems(
+    [{ id: "a", qty: 1 }, { id: "b", qty: 1 }, { id: "b", qty: 1 }],
+    products,
+    ORIGIN
+  );
+  assert.deepEqual(result.items, [{ id: "a", qty: 1 }, { id: "b", qty: 2 }]);
+});
+
 // ---------- toFormBody ----------
 
 test("toFormBody: flattens nested objects/arrays into Stripe's bracket notation", async () => {
@@ -150,7 +181,25 @@ test("onRequestPost: missing STRIPE_SECRET_KEY returns 500 and never calls fetch
   globalThis.fetch = async () => { fetchCalled = true; };
 
   try {
-    const res = await onRequestPost({ request: fakeRequest({ items: [] }), env: {} });
+    const res = await onRequestPost({ request: fakeRequest({ items: [] }), env: { DB: DEFAULT_DB } });
+    assert.equal(res.status, 500);
+    assert.equal(fetchCalled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: missing DB binding returns 500 and never calls fetch", async () => {
+  const { onRequestPost } = await fnPromise;
+  let fetchCalled = false;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { fetchCalled = true; };
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest({ items: [] }),
+      env: { STRIPE_SECRET_KEY: "sk_test_x" },
+    });
     assert.equal(res.status, 500);
     assert.equal(fetchCalled, false);
   } finally {
@@ -162,7 +211,7 @@ test("onRequestPost: empty items returns 400", async () => {
   const { onRequestPost } = await fnPromise;
   const res = await onRequestPost({
     request: fakeRequest({ items: [] }),
-    env: { STRIPE_SECRET_KEY: "sk_test_x" },
+    env: { STRIPE_SECRET_KEY: "sk_test_x", DB: DEFAULT_DB },
   });
   assert.equal(res.status, 400);
 });
@@ -173,7 +222,10 @@ test("onRequestPost: malformed request body returns 400", async () => {
     method: "POST",
     body: "not json",
   });
-  const res = await onRequestPost({ request: badRequest, env: { STRIPE_SECRET_KEY: "sk_test_x" } });
+  const res = await onRequestPost({
+    request: badRequest,
+    env: { STRIPE_SECRET_KEY: "sk_test_x", DB: DEFAULT_DB },
+  });
   assert.equal(res.status, 400);
 });
 
@@ -185,7 +237,7 @@ test("onRequestPost: products catalog fetch failing returns 500", async () => {
   try {
     const res = await onRequestPost({
       request: fakeRequest({ items: [{ id: "a", qty: 1 }] }),
-      env: { STRIPE_SECRET_KEY: "sk_test_x" },
+      env: { STRIPE_SECRET_KEY: "sk_test_x", DB: DEFAULT_DB },
     });
     assert.equal(res.status, 500);
   } finally {
@@ -193,7 +245,32 @@ test("onRequestPost: products catalog fetch failing returns 500", async () => {
   }
 });
 
-test("onRequestPost: happy path returns 200 with the Stripe session URL", async () => {
+test("onRequestPost: live D1 stock overrides a stale products.json value", async () => {
+  const { onRequestPost } = await fnPromise;
+  const originalFetch = globalThis.fetch;
+  // products.json says "a" has stock 1, but D1 (the live source of truth)
+  // says it's already sold out - the D1 value must win.
+  globalThis.fetch = async (url) => {
+    if (String(url).includes("products.json")) {
+      return new Response(JSON.stringify(products), { status: 200 });
+    }
+    throw new Error("unexpected fetch: " + url);
+  };
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest({ items: [{ id: "a", qty: 1 }] }),
+      env: { STRIPE_SECRET_KEY: "sk_test_x", DB: fakeDb({ a: 0, b: 3, c: 0 }) },
+    });
+    const body = await res.json();
+    assert.equal(res.status, 409);
+    assert.match(body.error, /sold out/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: happy path returns 200 with the Stripe session URL and metadata for the webhook", async () => {
   const { onRequestPost } = await fnPromise;
   const originalFetch = globalThis.fetch;
   let stripeCalledWith = null;
@@ -211,13 +288,17 @@ test("onRequestPost: happy path returns 200 with the Stripe session URL", async 
 
   try {
     const res = await onRequestPost({
-      request: fakeRequest({ items: [{ id: "a", qty: 1 }] }),
-      env: { STRIPE_SECRET_KEY: "sk_test_x" },
+      request: fakeRequest({ items: [{ id: "a", qty: 1 }, { id: "b", qty: 1 }, { id: "b", qty: 1 }] }),
+      env: { STRIPE_SECRET_KEY: "sk_test_x", DB: DEFAULT_DB },
     });
     const body = await res.json();
     assert.equal(res.status, 200);
     assert.equal(body.url, "https://checkout.stripe.com/session/xyz");
     assert.equal(stripeCalledWith.headers.Authorization, "Bearer sk_test_x");
+
+    const sentParams = new URLSearchParams(stripeCalledWith.body);
+    const metadataItems = JSON.parse(sentParams.get("metadata[items]"));
+    assert.deepEqual(metadataItems, [{ id: "a", qty: 1 }, { id: "b", qty: 2 }]);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -237,7 +318,7 @@ test("onRequestPost: Stripe error response surfaces its message, or a fallback i
   try {
     const res = await onRequestPost({
       request: fakeRequest({ items: [{ id: "a", qty: 1 }] }),
-      env: { STRIPE_SECRET_KEY: "sk_bad" },
+      env: { STRIPE_SECRET_KEY: "sk_bad", DB: DEFAULT_DB },
     });
     const body = await res.json();
     assert.equal(res.status, 502);
@@ -261,7 +342,7 @@ test("onRequestPost: Stripe error response with no message uses the fallback tex
   try {
     const res = await onRequestPost({
       request: fakeRequest({ items: [{ id: "a", qty: 1 }] }),
-      env: { STRIPE_SECRET_KEY: "sk_bad" },
+      env: { STRIPE_SECRET_KEY: "sk_bad", DB: DEFAULT_DB },
     });
     const body = await res.json();
     assert.equal(body.error, "Stripe couldn't create a checkout session.");

@@ -37,17 +37,20 @@ test("shop: renders product cards from the catalog with correct prices and butto
   assert.equal(inStockBtn.textContent, "Add to cart");
   assert.equal(inStockBtn.disabled, false);
   assert.equal(cards[0].querySelector(".product-price").textContent, "$10.00");
+  assert.equal(cards[0].querySelector(".product-stock").textContent, "Only 2 left");
 
   const soldOutBtn = cards[1].querySelector(".product-add");
   assert.equal(soldOutBtn.textContent, "Sold out");
   assert.equal(soldOutBtn.disabled, true);
+  assert.equal(cards[1].querySelector(".product-stock"), null);
 
   const missingStockBtn = cards[2].querySelector(".product-add");
   assert.equal(missingStockBtn.textContent, "Sold out");
   assert.equal(missingStockBtn.disabled, true);
+  assert.equal(cards[2].querySelector(".product-stock"), null);
 });
 
-test("shop: products.json fetch rejecting shows the fallback message", async () => {
+test("shop: the products fetch rejecting shows the fallback message", async () => {
   const dom = setup({ fetchImpl: async () => { throw new Error("network down"); } });
   await flushPromises();
   const grid = dom.window.document.getElementById("shop-grid");
@@ -131,7 +134,7 @@ test("shop: checkout success calls the API with the cart contents and takes the 
   let checkoutRequestBody = null;
   const dom = createDom();
   dom.window.fetch = async (url, init) => {
-    if (String(url).includes("products.json")) return jsonResponse(STOCK_PRODUCTS);
+    if (String(url).includes("api/products")) return jsonResponse(STOCK_PRODUCTS);
     checkoutRequestBody = JSON.parse(init.body);
     return jsonResponse({ url: "https://checkout.stripe.com/session/abc" });
   };
@@ -151,7 +154,7 @@ test("shop: checkout success calls the API with the cart contents and takes the 
 test("shop: a non-JSON checkout error response shows the friendly fallback, not a raw parser error (regression)", async () => {
   const dom = createDom();
   dom.window.fetch = async (url) => {
-    if (String(url).includes("products.json")) return jsonResponse(STOCK_PRODUCTS);
+    if (String(url).includes("api/products")) return jsonResponse(STOCK_PRODUCTS);
     return { ok: false, text: async () => "Not found" };
   };
   injectScripts(dom, ["js/util.js", "js/cart.js", "js/shop.js"]);
@@ -170,7 +173,7 @@ test("shop: a non-JSON checkout error response shows the friendly fallback, not 
 test("shop: a JSON checkout error response shows that exact message", async () => {
   const dom = createDom();
   dom.window.fetch = async (url) => {
-    if (String(url).includes("products.json")) return jsonResponse(STOCK_PRODUCTS);
+    if (String(url).includes("api/products")) return jsonResponse(STOCK_PRODUCTS);
     return { ok: false, text: async () => JSON.stringify({ error: "Only 1 left." }) };
   };
   injectScripts(dom, ["js/util.js", "js/cart.js", "js/shop.js"]);

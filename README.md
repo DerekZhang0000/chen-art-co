@@ -1,6 +1,6 @@
 # Chen Art Co website
 
-A static website for the Chen Art Co embroidery studio, plus a small shop with real checkout. No build step, no framework — plain HTML/CSS/JS for the site, with one tiny serverless function (Cloudflare Pages Function) to talk to Stripe for payments.
+A static website for the Chen Art Co embroidery studio, plus a small shop with real checkout and live inventory. No build step, no framework — plain HTML/CSS/JS for the site, with a few small serverless functions (Cloudflare Pages Functions) for Stripe payments, live stock (Cloudflare D1), and custom order emails.
 
 ## Before going live
 
@@ -57,9 +57,23 @@ That's it — `functions/api/create-checkout-session.js` deploys automatically a
 
 - `price` is in **cents** (6800 = $68.00).
 - `id` must be unique and shouldn't change once a product's been live (it's just a slug, letters/numbers/dashes).
-- Add a new product by copying an entry; remove one by deleting its entry (or set `"stock": 0` to keep it visible-but-sold-out... actually sold-out items still render with a disabled "Sold out" button, so either approach works).
+- `name`, `price`, `image`, and `description` come from this file.
 
-**⚠️ Important limitation — no live inventory sync.** These are one-of-a-kind or small-batch pieces, and the site has no database — `stock` in `products.json` is the *only* source of truth, and it doesn't decrease automatically when someone buys. **After every sale, manually lower (or zero out) that product's `stock` and redeploy** — otherwise the same one-of-a-kind item could be sold to two people. For low order volume this manual step is genuinely fine; just make it a habit to check `products.json` against the Stripe Dashboard's order list before a piece could be bought twice.
+**`stock` in `products.json` is seed data only — not live.** Live stock (the number that actually decreases when someone buys) lives in a Cloudflare D1 database instead, set up in "Live inventory" below. **Adding a brand-new product touches two places**: an entry here in `products.json` *and* a row in D1 (via `db/seed.sql` or a manual `INSERT`) — a product missing from D1 shows as sold out by default, so don't forget the second step.
+
+## Live inventory (Cloudflare D1)
+
+Stock now updates automatically when a sale completes, instead of needing a manual edit to `products.json` after every order. A Stripe webhook tells the site the instant a payment finishes (not the buyer's browser redirecting back, which they could skip by closing the tab), which then decrements the real count in a small Cloudflare D1 database.
+
+**One-time setup:**
+
+1. Create the database: `npx wrangler d1 create chen-art-co-inventory` — copy the `database_id` it prints into `wrangler.toml`.
+2. Load the schema and starting stock into it: `npx wrangler d1 execute chen-art-co-inventory --remote --file=./db/schema.sql` then `--remote --file=./db/seed.sql`.
+3. In the Cloudflare Pages project: **Settings → Functions → D1 database bindings** → add binding name `DB` → select `chen-art-co-inventory`, for both Production and Preview.
+4. In the Stripe Dashboard: **Developers → Webhooks → Add endpoint** → URL is your site's `/api/stripe-webhook` (e.g. `https://chenart.co/api/stripe-webhook`) → events to send: `checkout.session.completed` **and** `checkout.session.async_payment_succeeded` (the second one covers delayed payment methods like bank debits, which complete the checkout session before the payment itself actually clears) → copy the signing secret it gives you.
+5. Add that secret as `STRIPE_WEBHOOK_SECRET` in **Settings → Environment variables** (Secret, both Production and Preview) — same pattern as `STRIPE_SECRET_KEY`.
+
+**Testing locally:** once `wrangler.toml`'s `[[d1_databases]]` block exists, `npm run dev` auto-provisions a local D1 (no cloud credentials needed) — see "Running it locally" below for the one-time local schema/seed step. To test the webhook itself, install the [Stripe CLI](https://docs.stripe.com/stripe-cli), run `stripe listen --forward-to localhost:8788/api/stripe-webhook` (copy the local webhook secret it prints into `.dev.vars` as `STRIPE_WEBHOOK_SECRET`), then `stripe trigger checkout.session.completed`.
 
 ## Editing content
 
@@ -83,13 +97,20 @@ Keep images under ~2000px wide so the site stays fast — most photo editors and
 
 ## Running it locally
 
-The Shop section fetches `data/products.json` at load time, which browsers block over a plain `file://` URL — so opening `index.html` directly will show "Couldn't load the shop" (everything else on the page works fine that way). To see the Shop (and test checkout) locally, run:
+The Shop section fetches `/api/products` at load time, which needs a real local server (not a plain `file://` open of `index.html`, which will show "Couldn't load the shop" — everything else on the page still works fine that way). To see the Shop (and test checkout) locally, run:
 
 ```
 npm.cmd run dev
 ```
 
-This runs Cloudflare's local dev tool (`wrangler pages dev .`), which serves the site and emulates the Pages Function. For the checkout button to actually complete, add a `.dev.vars` file in the project root with `STRIPE_SECRET_KEY=sk_test_...` (a test-mode key from your Stripe dashboard).
+This runs Cloudflare's local dev tool (`wrangler pages dev .`), which serves the site and emulates the Pages Functions. For the checkout button to actually complete, add a `.dev.vars` file in the project root with `STRIPE_SECRET_KEY=sk_test_...` (a test-mode key from your Stripe dashboard).
+
+**One-time local database setup** (needed for `/api/products` and checkout to return real stock instead of a 500 — see "Live inventory" above):
+```
+npx wrangler d1 execute chen-art-co-inventory --local --file=./db/schema.sql
+npx wrangler d1 execute chen-art-co-inventory --local --file=./db/seed.sql
+```
+This creates a local SQLite-backed database under `.wrangler/` — no cloud credentials needed.
 
 ## Running tests
 
@@ -126,8 +147,14 @@ js/main.js                              mobile menu, gallery lightbox, custom-or
 js/shop.js                              product rendering, cart, and checkout wiring for the Shop section
 js/cart.js                              pure cart/pricing logic used by shop.js (unit tested)
 js/util.js                              small shared helpers (e.g. safe JSON parsing)
-data/products.json                      the shop's product catalog (edit this to add/remove/reprice items)
+data/products.json                      product catalog: name/price/image/description (stock is seed-only - see Live inventory)
+wrangler.toml                           Cloudflare config - declares the D1 database binding
+db/schema.sql                           D1 table definitions (live stock + processed webhook events)
+db/seed.sql                             starting stock values, loaded into D1 once
+functions/_lib/inventory.js             shared helper: merges products.json with live D1 stock
+functions/api/products.js               Cloudflare Pages Function: GET /api/products (catalog + live stock)
 functions/api/create-checkout-session.js  Cloudflare Pages Function that creates the Stripe Checkout session
+functions/api/stripe-webhook.js         Cloudflare Pages Function that decrements D1 stock on a completed sale
 tests/                                  unit tests (run with `npm test`)
 images/                                  photos, video posters, and favicon
 videos/                                  video clips used in the gallery and Process section

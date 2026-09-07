@@ -63,6 +63,7 @@
         '<div class="product-body">' +
         "<h4>" + escapeHtml(product.name) + "</h4>" +
         '<p class="product-desc">' + escapeHtml(product.description) + "</p>" +
+        (soldOut ? "" : '<span class="product-stock">Only ' + product.stock + " left</span>") +
         '<div class="product-foot">' +
         '<span class="product-price">' + formatPrice(product.price) + "</span>" +
         "</div>" +
@@ -235,7 +236,7 @@
     window.history.replaceState({}, "", window.location.pathname + window.location.hash);
   }
 
-  fetch("data/products.json")
+  fetch("/api/products")
     .then(function (res) { return res.json(); })
     .then(function (data) {
       products = data;

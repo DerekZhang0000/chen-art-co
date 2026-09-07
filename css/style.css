@@ -99,11 +99,11 @@ section { padding: 96px 0; }
 .btn-primary:hover { background: #d90000; }
 
 .btn-outline {
-  background: transparent;
-  border-color: currentColor;
-  color: var(--on-secondary);
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: #fff;
 }
-.btn-outline:hover { background: rgba(255,255,255,0.1); }
+.btn-outline:hover { background: #33093d; }
 
 .btn-outline-dark {
   background: transparent;
@@ -127,6 +127,12 @@ section { padding: 96px 0; }
   align-items: center;
   justify-content: space-between;
   height: 76px;
+}
+
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .logo {
@@ -172,7 +178,7 @@ section { padding: 96px 0; }
 .main-nav a:hover::after { transform: scaleX(1); }
 
 .main-nav a.nav-cta {
-  background: var(--text);
+  background: var(--primary);
   color: #fff !important;
   padding: 12px 22px;
   border-radius: var(--radius);
@@ -312,7 +318,9 @@ section { padding: 96px 0; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 45% 35%;
+  object-position: center 40%;
+  transform: scale(1.25);
+  transform-origin: 100% 35%;
   opacity: 0.62;
 }
 
@@ -332,7 +340,8 @@ video.hero-media {
   position: relative;
   z-index: 2;
   padding-bottom: 72px;
-  max-width: 760px;
+  max-width: 520px;
+  margin-left: auto;
 }
 
 .hero h1 {
@@ -351,34 +360,35 @@ video.hero-media {
 .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
 
 .hero-eyebrow {
-  color: var(--accent);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 2px 10px rgba(0, 0, 0, 0.6);
+  color: #fff;
 }
 
 /* ---------- Marquee strip ---------- */
 .strip {
-  background: var(--text);
-  color: var(--background);
+  background: var(--secondary);
+  color: #fff;
   padding: 16px 0;
   overflow: hidden;
   white-space: nowrap;
   border-bottom: 1px solid var(--line-soft);
 }
 .strip-track {
-  display: inline-block;
-  padding-left: 100%;
-  animation: marquee 32s linear infinite;
+  display: flex;
+  width: max-content;
+  animation: marquee 22s linear infinite;
   font-family: var(--serif);
   font-size: 1rem;
   letter-spacing: 0.04em;
 }
-.strip-track span { margin: 0 28px; color: var(--accent); }
+.strip-group { display: flex; flex: none; }
+.strip-track span { margin: 0 40px; color: #fff; }
 @keyframes marquee {
   from { transform: translateX(0); }
-  to { transform: translateX(-100%); }
+  to { transform: translateX(-25%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .strip-track { animation: none; padding-left: 24px; }
+  .strip-track { animation: none; }
+  .strip-group:not(:first-child) { display: none; }
 }
 
 /* ---------- Intro ---------- */
@@ -392,11 +402,11 @@ video.hero-media {
   .intro { grid-template-columns: 1fr; gap: 32px; }
 }
 .intro-figure {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--radius);
 }
-.intro-figure img { width: 100%; height: 100%; object-fit: cover; }
+.intro-figure img, .intro-figure video { width: 100%; height: 100%; object-fit: cover; }
 .intro h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); }
 .intro-list {
   list-style: none;
@@ -422,6 +432,7 @@ video.hero-media {
 }
 
 /* ---------- Shop ---------- */
+.shop-section { background: var(--paper); }
 .checkout-banner {
   margin-bottom: 32px;
   padding: 16px 20px;
@@ -456,6 +467,7 @@ video.hero-media {
 .product-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .product-body h4 { font-size: 1.05rem; margin-bottom: 0; }
 .product-desc { font-size: 0.88rem; color: rgba(0,0,0,0.6); flex: 1; }
+.product-stock { font-size: 0.8rem; color: var(--primary); font-weight: 600; }
 
 .product-foot {
   display: flex;
@@ -577,7 +589,7 @@ video.hero-media {
 .cart-error { color: var(--primary); font-size: 0.85rem; margin: 10px 0 0; }
 
 /* ---------- Gallery ---------- */
-.gallery-section { background: var(--paper); }
+.gallery-section { background: var(--background); }
 
 .gallery-grid {
   display: grid;
@@ -600,7 +612,7 @@ video.hero-media {
   grid-column: span 1;
   grid-row: span 1;
 }
-.gallery-item.tall { grid-row: span 2; aspect-ratio: 1 / 2; }
+.gallery-item.tall { grid-row: span 2; }
 .gallery-item.wide { grid-column: span 2; aspect-ratio: 2 / 1; }
 
 .gallery-item img {
@@ -656,15 +668,62 @@ video.hero-media {
 .process-card .cap p { color: var(--on-secondary-dim); margin: 0; font-size: 0.88rem; }
 
 /* ---------- Custom orders ---------- */
-.custom-section { }
+.custom-section {
+  position: relative;
+  overflow: hidden;
+}
+.custom-section::before {
+  content: "";
+  position: absolute;
+  top: 56px;
+  bottom: 56px;
+  left: 3%;
+  width: 27%;
+  z-index: 0;
+  border-radius: var(--radius);
+  background-image: url("../images/ohio-gozaimasu-shirt.jpg");
+  background-repeat: no-repeat;
+  background-position: 75% 100%;
+  background-size: auto 118%;
+}
+.custom-image-caption {
+  position: absolute;
+  left: 3%;
+  bottom: 56px;
+  z-index: 1;
+  width: 27%;
+  padding: 28px 24px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: right;
+}
+@media (max-width: 900px) { .custom-image-caption { width: 100%; } }
+
+.custom-section .container {
+  position: relative;
+  z-index: 1;
+  width: 62%;
+  max-width: none;
+  margin: 0 0 0 35%;
+}
 
 .custom-grid {
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
   gap: 64px;
   align-items: start;
+  max-width: 780px;
+  margin: 0 auto;
 }
-@media (max-width: 900px) { .custom-grid { grid-template-columns: 1fr; gap: 40px; } }
+@media (max-width: 900px) {
+  .custom-section .container { width: 100%; max-width: var(--container); margin: 0 auto; }
+  .custom-grid { grid-template-columns: 1fr; gap: 40px; max-width: none; margin: 0; }
+  .custom-section::before { top: 0; bottom: 0; left: 0; width: 100%; border-radius: 0; opacity: 0.25; }
+}
 
 .steps { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 22px; }
 .steps li { display: flex; gap: 16px; }
@@ -759,26 +818,33 @@ video.hero-media {
   align-items: center;
 }
 @media (max-width: 860px) { .about-grid { grid-template-columns: 1fr; gap: 32px; } }
-.about-figures {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
 .about-figures img {
+  width: 100%;
+  display: block;
   border-radius: var(--radius);
-  aspect-ratio: 3/4;
-  object-fit: cover;
 }
-.about-figures img:nth-child(2) { margin-top: 32px; }
 
 /* ---------- CTA band ---------- */
 .cta-band {
-  background: var(--primary);
+  position: relative;
+  height: 480px;
+  padding: 24px 0;
+  background: var(--primary) url("../images/mahoraga-shirt-sunlight-2.jpg") center / cover no-repeat;
   color: #fff;
   text-align: center;
 }
-.cta-band h2 { color: #fff; font-size: clamp(1.7rem, 3.4vw, 2.4rem); }
-.cta-band p { color: rgba(255,255,255,0.88); max-width: 520px; margin: 0 auto 28px; }
+.cta-band h2 {
+  position: relative;
+  color: #fff;
+  font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+.cta-band .btn {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+}
 
 /* ---------- Footer ---------- */
 .site-footer {

@@ -26,19 +26,11 @@
 
 <header class="site-header">
   <div class="container">
-    <a class="logo" href="#top">
-      <img class="logo-mark" src="images/logo.png" alt="Chen Art Co." />
-      Chen Art Co.
-    </a>
-    <nav class="main-nav" id="main-nav">
-      <a href="#shop" class="nav-cta">Shop</a>
-      <a href="#work">Work</a>
-      <a href="#process">Process</a>
-      <a href="#custom">Custom Orders</a>
-      <a href="#about">About</a>
-      <a href="#contact">Contact</a>
-    </nav>
-    <div class="header-actions">
+    <div class="logo-group">
+      <a class="logo" href="#top">
+        <img class="logo-mark" src="images/logo.png" alt="Chen Art Co." />
+        Chen Art Co.
+      </a>
       <a class="instagram-link" href="https://instagram.com/arts.chen" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
           <defs>
@@ -56,6 +48,16 @@
         </svg>
         <span>@arts.chen</span>
       </a>
+    </div>
+    <nav class="main-nav" id="main-nav">
+      <a href="#shop" class="nav-cta">Shop</a>
+      <a href="#work">Work</a>
+      <a href="#process">Process</a>
+      <a href="#custom">Custom Orders</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="header-actions">
       <button class="cart-toggle" id="cart-toggle" aria-label="Open cart">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="9" cy="21" r="1.4" fill="currentColor" stroke="none" />
@@ -76,9 +78,7 @@
 
   <!-- Hero -->
   <section class="hero" id="top">
-    <video class="hero-media" autoplay muted loop playsinline poster="images/chen-video-02-poster.jpg">
-      <source src="videos/chen-video-02.mp4" type="video/mp4" />
-    </video>
+    <img class="hero-media" src="images/frieren-staff-and-sword-sunlight.jpg" alt="" loading="eager" />
     <div class="container">
       <div class="hero-inner">
         <span class="eyebrow hero-eyebrow">Custom embroidery studio</span>
@@ -94,16 +94,34 @@
 
   <div class="strip" aria-hidden="true">
     <div class="strip-track">
-      <span>Grad Stoles</span>
-      <span>Greek Letters</span>
-      <span>Fandom &amp; Anime Art</span>
-      <span>Custom Crests</span>
-      <span>Personalized Gifts</span>
-      <span>Grad Stoles</span>
-      <span>Greek Letters</span>
-      <span>Fandom &amp; Anime Art</span>
-      <span>Custom Crests</span>
-      <span>Personalized Gifts</span>
+      <div class="strip-group">
+        <span>Grad Stoles</span>
+        <span>Greek Letters</span>
+        <span>Fandom &amp; Anime Art</span>
+        <span>Custom Crests</span>
+        <span>Personalized Gifts</span>
+      </div>
+      <div class="strip-group">
+        <span>Grad Stoles</span>
+        <span>Greek Letters</span>
+        <span>Fandom &amp; Anime Art</span>
+        <span>Custom Crests</span>
+        <span>Personalized Gifts</span>
+      </div>
+      <div class="strip-group">
+        <span>Grad Stoles</span>
+        <span>Greek Letters</span>
+        <span>Fandom &amp; Anime Art</span>
+        <span>Custom Crests</span>
+        <span>Personalized Gifts</span>
+      </div>
+      <div class="strip-group">
+        <span>Grad Stoles</span>
+        <span>Greek Letters</span>
+        <span>Fandom &amp; Anime Art</span>
+        <span>Custom Crests</span>
+        <span>Personalized Gifts</span>
+      </div>
     </div>
   </div>
 
@@ -111,7 +129,9 @@
   <section class="intro-section">
     <div class="container intro">
       <div class="intro-figure">
-        <img src="images/chen-video-04-poster.jpg" alt="Sword and rose crest design in the embroidery hoop, mid-stitch" loading="lazy" />
+        <video autoplay muted loop playsinline poster="images/chen-video-02-poster.jpg">
+          <source src="videos/chen-video-02.mp4" type="video/mp4" />
+        </video>
       </div>
       <div>
         <span class="eyebrow">What we do</span>
@@ -153,84 +173,68 @@
       </div>
 
       <div class="gallery-grid" id="gallery-grid">
-        <button class="gallery-item wide" data-full="images/chen-06.jpg" data-type="image">
-          <img src="images/chen-06.jpg" alt="Sword and blue rose crest embroidered on a navy Champion crewneck" loading="lazy" />
+        <button class="gallery-item" data-full="images/mahoraga-shirt-d.jpg" data-type="image">
+          <img src="images/mahoraga-shirt-d.jpg" alt="Gold crossed-wings emblem embroidered on a black crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item tall" data-full="videos/chen-video-04.mp4" data-type="video" data-poster="images/chen-video-04-poster.jpg">
-          <img src="images/chen-video-04-poster.jpg" alt="Video: stitching a sword and rose crest" loading="lazy" />
-          <span class="play-badge">▶</span>
+        <button class="gallery-item" data-full="images/sukuna-shirt.jpg" data-type="image">
+          <img src="images/sukuna-shirt.jpg" alt="Stitched-mouth emblem with red accent marks embroidered on a grey crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-14.jpg" data-type="image">
-          <img src="images/chen-14.jpg" alt="Ohio outline embroidered on a white tee with Japanese lettering" loading="lazy" />
+        <button class="gallery-item" data-full="images/frieren-staff-and-sword-shirt-2.jpg" data-type="image">
+          <img src="images/frieren-staff-and-sword-shirt-2.jpg" alt="Staff-and-sword crest with blue roses embroidered on a grey crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-11.jpg" data-type="image">
-          <img src="images/chen-11.jpg" alt="Gold wheel and wing emblem embroidered on a grey crewneck" loading="lazy" />
+        <button class="gallery-item" data-full="images/anime-shirt-2.jpg" data-type="image">
+          <img src="images/anime-shirt-2.jpg" alt="Close-up of a colorful anime character portrait embroidered on the sleeve of a black crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="videos/chen-video-02.mp4" data-type="video" data-poster="images/chen-video-02-poster.jpg">
-          <img src="images/chen-video-02-poster.jpg" alt="Video: stitching a graduation stole crest reading Class of 2024" loading="lazy" />
-          <span class="play-badge">▶</span>
+        <button class="gallery-item" data-full="images/lpe-grad-stole.jpg" data-type="image">
+          <img src="images/lpe-grad-stole.jpg" alt="Embroidery machine stitching Greek letters onto a royal blue satin graduation stole" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-02.jpg" data-type="image">
-          <img src="images/chen-02.jpg" alt="Graduation stole embroidered with Greek letters and a sorority crest" loading="lazy" />
+        <button class="gallery-item" data-full="images/six-eyes-shirt-no-text.jpg" data-type="image">
+          <img src="images/six-eyes-shirt-no-text.jpg" alt="Six embroidered eyes design on a black crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-15.jpg" data-type="image">
-          <img src="images/chen-15.jpg" alt="Grinning skull-style face embroidered on a grey tee" loading="lazy" />
+        <button class="gallery-item" data-full="images/mahoraga-shirt-sunlight.jpg" data-type="image">
+          <img src="images/mahoraga-shirt-sunlight.jpg" alt="Gold emblem embroidered on a grey crewneck, lit in dramatic natural light" loading="lazy" />
         </button>
 
-        <button class="gallery-item wide" data-full="images/chen-07.jpg" data-type="image">
-          <img src="images/chen-07.jpg" alt="Gold necklace-style embroidery design on a grey crewneck, in packaging" loading="lazy" />
+        <button class="gallery-item" data-full="images/dr-beer-shirt-preview.jpg" data-type="image">
+          <img src="images/dr-beer-shirt-preview.jpg" alt="Playful custom logo design mid-stitch in the embroidery hoop on a heather grey shirt" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-04.jpg" data-type="image">
-          <img src="images/chen-04.jpg" alt="Small blue floral crest embroidered on a white tee" loading="lazy" />
+        <button class="gallery-item" data-full="images/six-eyes-shirt.jpg" data-type="image">
+          <img src="images/six-eyes-shirt.jpg" alt="Six embroidered eyes with lettering on a navy crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item tall" data-full="videos/chen-video-03.mp4" data-type="video" data-poster="images/chen-video-03-poster.jpg">
-          <img src="images/chen-video-03-poster.jpg" alt="Video: stitching a colorful anime-style character portrait" loading="lazy" />
-          <span class="play-badge">▶</span>
+        <button class="gallery-item" data-full="images/frieren-staff-and-sword-shirt-1.jpg" data-type="image">
+          <img src="images/frieren-staff-and-sword-shirt-1.jpg" alt="Staff-and-sword crest with blue roses embroidered on a white crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-16.jpg" data-type="image">
-          <img src="images/chen-16.jpg" alt="Close-up of a colorful anime-style character portrait embroidery" loading="lazy" />
+        <button class="gallery-item" data-full="images/mahoraga-low-key-shirt.jpg" data-type="image">
+          <img src="images/mahoraga-low-key-shirt.jpg" alt="Subtle tone-on-tone emblem embroidered on a black crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-09.jpg" data-type="image">
-          <img src="images/chen-09.jpg" alt="Anime-style character patch embroidered on a black sweatshirt sleeve" loading="lazy" />
+        <button class="gallery-item" data-full="images/anime-shirt.jpg" data-type="image">
+          <img src="images/anime-shirt.jpg" alt="Silver-haired anime character portrait embroidered on a white crewneck, in a black-lined frame" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-12.jpg" data-type="image">
-          <img src="images/chen-12.jpg" alt="Gold necklace-style embroidery design on a grey crewneck" loading="lazy" />
+        <button class="gallery-item" data-full="images/mahoraga-shirt-packaged.jpg" data-type="image">
+          <img src="images/mahoraga-shirt-packaged.jpg" alt="Finished embroidered crewneck folded and packaged for shipping" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="videos/chen-video-01.mp4" data-type="video" data-poster="images/chen-video-01-poster.jpg">
-          <img src="images/chen-video-01-poster.jpg" alt="Video: stitching Greek letters onto a graduation stole" loading="lazy" />
-          <span class="play-badge">▶</span>
+        <button class="gallery-item" data-full="images/kdp-grad-stole-blurred.jpg" data-type="image">
+          <img src="images/kdp-grad-stole-blurred.jpg" alt="Graduation stole with Greek letters, a crest, and a flag patch" loading="lazy" />
         </button>
 
-        <button class="gallery-item wide" data-full="images/chen-05.jpg" data-type="image">
-          <img src="images/chen-05.jpg" alt="Finished embroidered sweatshirt packaged in a branded box" loading="lazy" />
+        <button class="gallery-item" data-full="images/frieren-staff-and-sword-shirt-3.jpg" data-type="image">
+          <img src="images/frieren-staff-and-sword-shirt-3.jpg" alt="Staff-and-sword crest with blue roses embroidered on a navy Champion crewneck" loading="lazy" />
         </button>
 
-        <button class="gallery-item" data-full="images/chen-10.jpg" data-type="image">
-          <img src="images/chen-10.jpg" alt="Gold wheel and wing emblem embroidered on a grey crewneck, alternate angle" loading="lazy" />
-        </button>
-
-        <button class="gallery-item" data-full="images/chen-13.jpg" data-type="image">
-          <img src="images/chen-13.jpg" alt="Gold necklace-style embroidery design, close detail" loading="lazy" />
-        </button>
-
-        <button class="gallery-item" data-full="images/chen-01.jpg" data-type="image">
-          <img src="images/chen-01.jpg" alt="Embroidery machine stitching Greek letters onto satin stole ribbon" loading="lazy" />
-        </button>
-
-        <button class="gallery-item" data-full="images/chen-03.jpg" data-type="image">
-          <img src="images/chen-03.jpg" alt="Close-up of an embroidery machine stitching a detailed patch" loading="lazy" />
+        <button class="gallery-item" data-full="images/mahoraga-shirt-b.jpg" data-type="image">
+          <img src="images/mahoraga-shirt-b.jpg" alt="Close-up of a gold spoked emblem embroidered on an olive green shirt" loading="lazy" />
         </button>
       </div>
     </div>
@@ -246,17 +250,17 @@
       </div>
       <div class="process-grid">
         <div class="process-card">
-          <video src="videos/chen-video-02.mp4" poster="images/chen-video-02-poster.jpg" muted loop playsinline controls></video>
+          <video src="videos/angel-devil-stitching-video.mp4" poster="images/angel-devil-stitching-video-poster.jpg" autoplay muted loop playsinline></video>
           <div class="cap">
-            <h4>Grad stole crest</h4>
-            <p>Class year, crest, and lettering stitched onto satin ribbon.</p>
+            <h4>Angel Devil Crewneck</h4>
+            <p>A two-tone winged design, stitched detail by detail.</p>
           </div>
         </div>
         <div class="process-card">
-          <video src="videos/chen-video-04.mp4" poster="images/chen-video-04-poster.jpg" muted loop playsinline controls></video>
+          <video src="videos/miku-shirt-stitching-video.mp4" poster="images/miku-shirt-stitching-video-poster.jpg" autoplay muted loop playsinline></video>
           <div class="cap">
-            <h4>Custom crest</h4>
-            <p>A sword-and-rose design built from a reference sketch.</p>
+            <h4>Miku Crewneck</h4>
+            <p>A fan-art portrait built up in thread, layer by layer.</p>
           </div>
         </div>
       </div>
@@ -265,6 +269,7 @@
 
   <!-- Custom orders -->
   <section class="custom-section" id="custom">
+    <div class="custom-image-caption">Ohio Gozaimasu Tee</div>
     <div class="container custom-grid">
       <div>
         <span class="eyebrow">Custom orders</span>
@@ -351,15 +356,14 @@
   <section class="about-section" id="about">
     <div class="container about-grid">
       <div class="about-figures">
-        <img src="images/chen-17.jpg" alt="Finished embroidered tee resting on a chair beside the embroidery setup" loading="lazy" />
-        <img src="images/chen-video-01-poster.jpg" alt="Close-up of an embroidery hoop stitching graduation stole letters" loading="lazy" />
+        <img src="images/john-3.jpg" alt="Chen Art Co. founder holding up finished embroidered pieces" loading="lazy" />
       </div>
       <div>
         <span class="eyebrow">About the studio</span>
         <h2>A small studio, made by hand.</h2>
-        <p>Chen Art Co. is a one-person embroidery studio. Every design gets drawn up, digitized, and stitched in-house on a home embroidery machine, one order at a time. What started as gifts for friends turned into custom stoles, sweatshirts, and keepsakes for anyone with an idea worth stitching down.</p>
-        <p>No two orders look the same, and that's the point. Describe it, draw it, or send a screenshot, and it can probably be embroidered.</p>
-        <a href="#custom" class="btn btn-outline-dark">Start your piece</a>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <a href="#custom" class="btn btn-primary">Start your piece</a>
       </div>
     </div>
   </section>
@@ -368,8 +372,7 @@
   <section class="cta-band">
     <div class="container">
       <h2>Got an idea you want stitched?</h2>
-      <p>From grad stoles to fandom art, if you can describe it, we can probably embroider it.</p>
-      <a href="#custom" class="btn" style="background:#fff;color:var(--primary);">Start a custom order</a>
+      <a href="#custom" class="btn btn-primary">Start a custom order</a>
     </div>
   </section>
 
@@ -380,8 +383,8 @@
     <div class="footer-grid">
       <div class="footer-brand">
         <a class="logo" href="#top">
-          <img class="logo-mark" src="images/logo.png" alt="Chen Art Co" />
-          Chen Art Co
+          <img class="logo-mark" src="images/logo.png" alt="Chen Art Co." />
+          Chen Art Co.
         </a>
         <p>Custom, made-to-order embroidery: grad stoles, Greek letters, fandom art, and personal keepsakes, stitched one piece at a time.</p>
       </div>

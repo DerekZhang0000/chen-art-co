@@ -1,26 +1,66 @@
 [
   {
-    "id": "gold-thread-crewneck",
-    "name": "Gold Thread Emblem Crewneck",
-    "price": 6800,
-    "image": "images/chen-07.jpg",
-    "description": "One-of-a-kind gold thread emblem, hand-finished on a heather grey crewneck. Size L.",
+    "id": "gojo-satoru-portrait-crewneck",
+    "name": "Gojo Satoru Portrait Crewneck",
+    "price": 5000,
+    "image": "images/anime-shirt.jpg",
+    "description": "Gojo Satoru portrait embroidered in a framed panel on a white crewneck.",
+    "stock": 2
+  },
+  {
+    "id": "frieren-staff-sword-crewneck-white",
+    "name": "Frieren Staff & Sword Crewneck (White)",
+    "price": 5000,
+    "image": "images/frieren-staff-and-sword-shirt-1.jpg",
+    "description": "Staff-and-sword crest with blue roses embroidered on a white crewneck.",
     "stock": 1
   },
   {
-    "id": "sword-rose-crewneck",
-    "name": "Sword & Rose Crest Crewneck",
-    "price": 7200,
-    "image": "images/chen-06.jpg",
-    "description": "Custom sword-and-rose crest embroidered on a navy Champion crewneck. Size M.",
+    "id": "frieren-staff-sword-crewneck-grey",
+    "name": "Frieren Staff & Sword Crewneck (Grey)",
+    "price": 5000,
+    "image": "images/frieren-staff-and-sword-shirt-2.jpg",
+    "description": "Staff-and-sword crest with blue roses embroidered on a grey crewneck.",
     "stock": 1
   },
   {
-    "id": "grinning-face-tee",
-    "name": "Grinning Face Tee",
-    "price": 3800,
-    "image": "images/chen-15.jpg",
-    "description": "Original character embroidery on a soft grey tee. Size L.",
-    "stock": 3
+    "id": "frieren-staff-sword-crewneck-navy",
+    "name": "Frieren Staff & Sword Crewneck (Navy Champion)",
+    "price": 6700,
+    "image": "images/frieren-staff-and-sword-shirt-3.jpg",
+    "description": "Staff-and-sword crest with blue roses embroidered on a navy Champion crewneck.",
+    "stock": 1
+  },
+  {
+    "id": "mahoraga-domain-expansion-tee",
+    "name": "Mahoraga Domain Expansion Crewneck",
+    "price": 5000,
+    "image": "images/mahoraga-low-key-shirt.jpg",
+    "description": "Subtle tone-on-tone Mahoraga emblem embroidered on a black crewneck.",
+    "stock": 1
+  },
+  {
+    "id": "mahoraga-wings-crewneck",
+    "name": "Mahoraga Wings Crewneck",
+    "price": 5000,
+    "image": "images/mahoraga-shirt-d.jpg",
+    "description": "Gold crossed-wings emblem embroidered on a black crewneck.",
+    "stock": 1
+  },
+  {
+    "id": "six-eyes-crewneck",
+    "name": "Six Eyes Crewneck",
+    "price": 5000,
+    "image": "images/six-eyes-shirt.jpg",
+    "description": "Six embroidered eyes with \"Six Eyes\" lettering on a navy crewneck.",
+    "stock": 1
+  },
+  {
+    "id": "six-eyes-crewneck-no-text",
+    "name": "Six Eyes Crewneck (No Text)",
+    "price": 5000,
+    "image": "images/six-eyes-shirt-no-text.jpg",
+    "description": "Six embroidered eyes design on a black crewneck.",
+    "stock": 1
   }
 ]

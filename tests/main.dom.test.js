@@ -62,8 +62,19 @@ test("main: lightbox opens an <img> for an image gallery item", () => {
 });
 
 test("main: lightbox opens a <video> with src/poster/controls for a video gallery item", () => {
-  const dom = setup();
+  const dom = createDom();
   const { document } = dom.window;
+  // The real gallery is currently image-only (see gallery-grid in index.html),
+  // but the lightbox's video-handling code path still needs coverage - add a
+  // synthetic video item before main.js runs (its click handlers are bound
+  // once, at load time, via querySelectorAll - not delegated).
+  document.getElementById("gallery-grid").insertAdjacentHTML(
+    "beforeend",
+    '<button class="gallery-item" data-full="videos/sample.mp4" data-type="video" data-poster="images/sample-poster.jpg">' +
+      '<img src="images/sample-poster.jpg" alt="" /></button>'
+  );
+  injectScripts(dom, ["js/main.js"]);
+
   const videoItem = document.querySelector('.gallery-item[data-type="video"]');
   videoItem.click();
 

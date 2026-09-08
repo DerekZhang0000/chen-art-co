@@ -402,7 +402,7 @@ video.hero-media {
   .intro { grid-template-columns: 1fr; gap: 32px; }
 }
 .intro-figure {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: var(--radius);
 }
@@ -623,6 +623,20 @@ video.hero-media {
 }
 .gallery-item:hover img { transform: scale(1.06); }
 
+.gallery-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-family: var(--serif);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .play-badge {
   position: absolute;
   top: 12px;
@@ -681,27 +695,11 @@ video.hero-media {
   width: 27%;
   z-index: 0;
   border-radius: var(--radius);
-  background-image: url("../images/ohio-gozaimasu-shirt.jpg");
+  background-image: url("../images/dr-beer-shirt-preview.jpg");
   background-repeat: no-repeat;
-  background-position: 75% 100%;
-  background-size: auto 118%;
+  background-position: center;
+  background-size: cover;
 }
-.custom-image-caption {
-  position: absolute;
-  left: 3%;
-  bottom: 56px;
-  z-index: 1;
-  width: 27%;
-  padding: 28px 24px;
-  border-radius: 0 0 var(--radius) var(--radius);
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font-family: var(--serif);
-  font-size: 1.2rem;
-  font-weight: 600;
-  text-align: right;
-}
-@media (max-width: 900px) { .custom-image-caption { width: 100%; } }
 
 .custom-section .container {
   position: relative;

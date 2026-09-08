@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-07 — Gallery, Custom Orders, and Intro Content Refresh
+
+- Work gallery: replaced the blurred grad stole photo with a new mid-stitch shot, and swapped the Dr. Beer photo for a new Ohio Gozaimasu Tee crop (now labeled with a caption).
+- Custom Orders section now features the Dr. Beer Tee photo (previously Ohio Gozaimasu Tee), shown uncropped.
+- "What we do" video replaced with new embroidery-machine footage of the mech shirt design; adjusted that section's image/video box to a taller aspect ratio so less of the (portrait-shot) footage gets cropped.
+- Tab title simplified to "Chen Art Co." site-wide (was "Chen Art Co. - Custom Embroidery"), including the maintenance page and social-preview title.
+- The maintenance page now keeps the site's favicon instead of a blank tab icon.
+
+## 2026-09-07 — LaunchDarkly Maintenance Mode
+
+- Added a "down for maintenance" mode driven by a LaunchDarkly feature flag (`maintenance-mode`): flipping it takes the whole site — pages and the Shop's API alike — down to a branded maintenance page within seconds, no deploy needed.
+- New `functions/_middleware.js` checks the flag on every request; fails open (site stays up) if LaunchDarkly isn't configured or unreachable.
+- New branded `maintenance.html` page (logo, Instagram handle, contact info).
+- Documented one-time LaunchDarkly + Cloudflare setup in `README.md`.
+
 ## 2026-09-06 — Live Inventory, New Shop Items, and Site Content Refresh
 
 - Live inventory: stock now updates automatically via a Stripe webhook + Cloudflare D1 database instead of manual edits to `data/products.json`.

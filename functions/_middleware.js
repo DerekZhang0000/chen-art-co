@@ -14,9 +14,15 @@ import { isFlagOn } from "./_lib/launchdarkly.js";
 
 const FLAG_KEY = "maintenance-mode";
 
-// The logo maintenance.html itself displays - let it through even while
-// the site is "down" so that page isn't stuck with a broken image.
-const ALLOWED_DURING_MAINTENANCE = new Set(["/images/logo.png"]);
+// Assets maintenance.html itself references (logo + browser-tab icons) -
+// let them through even while the site is "down" so that page isn't
+// stuck with a broken image or a missing tab icon.
+const ALLOWED_DURING_MAINTENANCE = new Set([
+  "/images/logo.png",
+  "/images/favicon.ico",
+  "/images/favicon-32.png",
+  "/images/apple-touch-icon.png",
+]);
 
 export async function onRequest(context) {
   const { request, env, next } = context;

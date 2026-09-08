@@ -56,25 +56,27 @@ test("onRequest: serves maintenance.html with 503 when the flag evaluates to tru
   }
 });
 
-test("onRequest: always lets the logo through, even during maintenance, so the maintenance page itself isn't broken", async () => {
-  const { onRequest } = await fnPromise;
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => {
-    throw new Error("should not check the flag for the logo request");
-  };
+for (const path of ["/images/logo.png", "/images/favicon.ico", "/images/favicon-32.png", "/images/apple-touch-icon.png"]) {
+  test(`onRequest: always lets ${path} through, even during maintenance, so the maintenance page itself isn't broken`, async () => {
+    const { onRequest } = await fnPromise;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      throw new Error(`should not check the flag for ${path}`);
+    };
 
-  try {
-    const res = await onRequest(
-      fakeContext({
-        request: new Request("https://chenart.co/images/logo.png"),
-        env: { LD_CLIENT_SIDE_ID: "abc" },
-      })
-    );
-    assert.equal(await res.text(), "real site");
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-});
+    try {
+      const res = await onRequest(
+        fakeContext({
+          request: new Request(`https://chenart.co${path}`),
+          env: { LD_CLIENT_SIDE_ID: "abc" },
+        })
+      );
+      assert.equal(await res.text(), "real site");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
 
 test("onRequest: fails open (passes through) when the LaunchDarkly check errors", async () => {
   const { onRequest } = await fnPromise;

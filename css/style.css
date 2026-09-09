@@ -789,6 +789,27 @@ video.hero-media {
   border-color: var(--secondary);
 }
 
+.form-row input[type="file"] {
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.field-hint {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: rgba(0,0,0,0.55);
+}
+
+.field-error {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--primary);
+  min-height: 1.6em;
+  visibility: hidden;
+}
+.field-error.show { visibility: visible; }
+
 .form-foot {
   display: flex;
   align-items: center;
@@ -801,9 +822,10 @@ video.hero-media {
 .form-status {
   margin-top: 16px;
   font-size: 0.9rem;
-  display: none;
+  min-height: 1.6em;
+  visibility: hidden;
 }
-.form-status.show { display: block; }
+.form-status.show { visibility: visible; }
 .form-status.ok { color: #1a7a3c; }
 .form-status.err { color: var(--primary); }
 

@@ -212,6 +212,44 @@ test("onRequestPost: async_payment_succeeded decrements stock once the delayed p
   assert.equal(db.stockById.a, 0);
 });
 
+test("onRequestPost: an unlimited-stock product (preview-test-item) is never decremented and needs no D1 row", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({ items: [{ id: "preview-test-item", qty: 3 }] });
+  const db = fakeDb(); // no product_stock row for preview-test-item at all
+
+  const originalError = console.error;
+  const logs = [];
+  console.error = (msg) => logs.push(msg);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, DB: db },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(logs.length, 0); // no false "no effect" warning for an item that was never meant to decrement
+  } finally {
+    console.error = originalError;
+  }
+});
+
+test("onRequestPost: a mixed order only decrements the tracked item, leaving the unlimited one alone", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1 }, { id: "preview-test-item", qty: 5 }],
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const res = await onRequestPost({
+    request: fakeRequest(body, await signedHeader(body, SECRET)),
+    env: { STRIPE_WEBHOOK_SECRET: SECRET, DB: db },
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(db.stockById.a, 0);
+  assert.equal(db.stockById["preview-test-item"], undefined);
+});
+
 test("onRequestPost: a decrement race (stock ran out) still returns 200 and logs a warning", async () => {
   const { onRequestPost } = await fnPromise;
   const body = checkoutCompletedEvent({ items: [{ id: "a", qty: 1 }] });

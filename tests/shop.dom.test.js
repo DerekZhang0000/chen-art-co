@@ -50,6 +50,23 @@ test("shop: renders product cards from the catalog with correct prices and butto
   assert.equal(cards[2].querySelector(".product-stock"), null);
 });
 
+test("shop: an unlimited-stock (-1) product never shows sold out or a stock badge, and stays addable", async () => {
+  const dom = await setupWithCatalog([
+    { id: "unlimited", name: "Unlimited Item", price: 50, image: "images/logo.png", description: "Test", stock: -1 },
+  ]);
+  const { document } = dom.window;
+
+  const card = document.querySelector(".product-card");
+  assert.equal(card.querySelector(".product-stock"), null);
+
+  const button = card.querySelector(".product-add");
+  for (let i = 0; i < 20; i++) button.click();
+
+  assert.equal(button.textContent, "Add to cart");
+  assert.equal(button.disabled, false);
+  assert.equal(document.getElementById("cart-count").textContent, "20");
+});
+
 test("shop: the products fetch rejecting shows the fallback message", async () => {
   const dom = setup({ fetchImpl: async () => { throw new Error("network down"); } });
   await flushPromises();

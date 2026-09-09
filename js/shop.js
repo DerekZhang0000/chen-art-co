@@ -52,9 +52,10 @@
 
     shopGrid.innerHTML = "";
     products.forEach(function (product) {
+      var stock = ChenCart.stockOf(product);
       var inCart = cart[product.id] || 0;
-      var soldOut = !product.stock || product.stock < 1;
-      var atLimit = inCart >= product.stock;
+      var soldOut = stock < 1;
+      var atLimit = inCart >= stock;
 
       var card = document.createElement("div");
       card.className = "product-card";
@@ -63,7 +64,7 @@
         '<div class="product-body">' +
         "<h4>" + escapeHtml(product.name) + "</h4>" +
         '<p class="product-desc">' + escapeHtml(product.description) + "</p>" +
-        (soldOut ? "" : '<span class="product-stock">Only ' + product.stock + " left</span>") +
+        (soldOut || !isFinite(stock) ? "" : '<span class="product-stock">Only ' + stock + " left</span>") +
         '<div class="product-foot">' +
         '<span class="product-price">' + formatPrice(product.price) + "</span>" +
         "</div>" +

@@ -62,5 +62,14 @@
     "image": "images/six-eyes-shirt-no-text.jpg",
     "description": "Six embroidered eyes design on a black crewneck.",
     "stock": 1
+  },
+  {
+    "id": "preview-test-item",
+    "name": "Test Item (Preview Only)",
+    "price": 50,
+    "image": "images/logo.png",
+    "description": "Internal item for testing checkout end-to-end. Unlimited stock, never shown in production.",
+    "stock": -1,
+    "previewOnly": true
   }
 ]

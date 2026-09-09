@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-08 — Reference Image Attachments & Preview Test Item
+
+- Custom order form: visitors can now attach up to 5 reference images (6MB each) directly in the form instead of emailing them separately afterward; images are sent as attachments via Resend, with matching client- and server-side validation.
+- Fixed a layout bug where a form validation message appearing would reflow the Custom Orders section, visibly shifting the zoom/crop of the decorative Dr. Beer background photo.
+- Shop: added a $0.50 test item (`preview-test-item`) with unlimited stock for exercising checkout end-to-end without touching real inventory. Hidden from Production behind a `SHOW_TEST_PRODUCTS` environment variable (Preview/local only) and never decremented by the Stripe webhook.
+- Fixed: that unlimited-stock item would incorrectly fail checkout with "just sold out" despite showing as available in the shop.
+- Removed a stray em dash from the order-confirmation message.
+- Expanded test coverage across cart, shop, products API, checkout, and webhook tests (144 tests passing).
+
 ## 2026-09-07 — Gallery, Custom Orders, and Intro Content Refresh
 
 - Work gallery: replaced the blurred grad stole photo with a new mid-stitch shot, and swapped the Dr. Beer photo for a new Ohio Gozaimasu Tee crop (now labeled with a caption).

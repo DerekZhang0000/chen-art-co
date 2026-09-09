@@ -35,6 +35,8 @@
 // `checkout.session.completed` AND `checkout.session.async_payment_succeeded`
 // events, and copy its signing secret into STRIPE_WEBHOOK_SECRET. See README.md.
 
+import { UNLIMITED_STOCK_PRODUCT_IDS } from "../_lib/inventory.js";
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -73,12 +75,16 @@ export async function onRequestPost(context) {
     items = [];
   }
 
+  // Unlimited-stock products (see inventory.js) have no row in D1 at all -
+  // never attempt to decrement them.
+  const decrementItems = items.filter((item) => !UNLIMITED_STOCK_PRODUCT_IDS.has(item.id));
+
   const statements = [
     env.DB.prepare("INSERT INTO processed_webhook_events (event_id, session_id) VALUES (?, ?)").bind(
       event.id,
       session.id
     ),
-    ...items.map((item) =>
+    ...decrementItems.map((item) =>
       env.DB.prepare("UPDATE product_stock SET stock = stock - ? WHERE id = ? AND stock >= ?").bind(
         item.qty,
         item.id,
@@ -104,7 +110,7 @@ export async function onRequestPost(context) {
   // just flag it for manual reconciliation.
   results.slice(1).forEach((result, i) => {
     if (result.meta.changes === 0) {
-      console.error(`Stock decrement had no effect for product "${items[i].id}" (session ${session.id}).`);
+      console.error(`Stock decrement had no effect for product "${decrementItems[i].id}" (session ${session.id}).`);
     }
   });
 

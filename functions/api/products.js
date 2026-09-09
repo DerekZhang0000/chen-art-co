@@ -25,7 +25,14 @@ export async function onRequestGet(context) {
   }
 
   const merged = await mergeLiveStock(products, env.DB);
-  return jsonResponse(merged);
+
+  // previewOnly products (e.g. the $0.50 checkout test item) only show up
+  // when SHOW_TEST_PRODUCTS=true - set that in Preview environment
+  // variables and .dev.vars, never in Production. See README.md.
+  const showTestProducts = env.SHOW_TEST_PRODUCTS === "true";
+  const visible = merged.filter((p) => !p.previewOnly || showTestProducts);
+
+  return jsonResponse(visible);
 }
 
 function jsonResponse(data, status = 200) {

@@ -3,9 +3,13 @@
 
   // Treats a missing/non-numeric/non-positive `stock` as 0 (unavailable)
   // rather than `undefined`, which previously produced NaN through
-  // Math.min(qty, undefined) and got persisted into localStorage.
+  // Math.min(qty, undefined) and got persisted into localStorage. -1 is the
+  // sentinel the API uses for unlimited-stock items (see inventory.js) and
+  // maps to Infinity, so the same stock-capping math below just works
+  // without special-casing it at every call site.
   function stockOf(product) {
     var s = product && product.stock;
+    if (s === -1) return Infinity;
     return typeof s === "number" && s > 0 ? s : 0;
   }
 
@@ -91,6 +95,7 @@
     formatPrice: formatPrice,
     escapeHtml: escapeHtml,
     findProduct: findProduct,
+    stockOf: stockOf,
     cartTotalQuantity: cartTotalQuantity,
     cartSubtotal: cartSubtotal,
     addItem: addItem,

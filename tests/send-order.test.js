@@ -168,6 +168,91 @@ test("onRequestPost: Resend error response surfaces its message, or a fallback i
   }
 });
 
+function fakeImageFile(name, sizeBytes, type = "image/png") {
+  return new File([new Uint8Array(sizeBytes)], name, { type });
+}
+
+test("onRequestPost: rejects more than 5 reference images", async () => {
+  const { onRequestPost } = await fnPromise;
+  const form = new FormData();
+  for (const [key, value] of Object.entries(VALID_FIELDS)) form.set(key, value);
+  for (let i = 0; i < 6; i++) form.append("referenceImages", fakeImageFile(`ref-${i}.png`, 100));
+  const request = new Request("https://chenart.co/api/send-order", { method: "POST", body: form });
+
+  const res = await onRequestPost({ request, env: { RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com" } });
+  assert.equal(res.status, 400);
+});
+
+test("onRequestPost: rejects a reference image over 6MB", async () => {
+  const { onRequestPost } = await fnPromise;
+  const form = new FormData();
+  for (const [key, value] of Object.entries(VALID_FIELDS)) form.set(key, value);
+  form.append("referenceImages", fakeImageFile("big.png", 6 * 1024 * 1024 + 1));
+  const request = new Request("https://chenart.co/api/send-order", { method: "POST", body: form });
+
+  const res = await onRequestPost({ request, env: { RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com" } });
+  assert.equal(res.status, 400);
+});
+
+test("onRequestPost: rejects a non-image reference attachment", async () => {
+  const { onRequestPost } = await fnPromise;
+  const form = new FormData();
+  for (const [key, value] of Object.entries(VALID_FIELDS)) form.set(key, value);
+  form.append("referenceImages", fakeImageFile("notes.txt", 10, "text/plain"));
+  const request = new Request("https://chenart.co/api/send-order", { method: "POST", body: form });
+
+  const res = await onRequestPost({ request, env: { RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com" } });
+  assert.equal(res.status, 400);
+});
+
+test("onRequestPost: valid reference images are sent as base64 Resend attachments", async () => {
+  const { onRequestPost } = await fnPromise;
+  const originalFetch = globalThis.fetch;
+  let resendCalledWith = null;
+  globalThis.fetch = async (url, init) => {
+    resendCalledWith = init;
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    const form = new FormData();
+    for (const [key, value] of Object.entries(VALID_FIELDS)) form.set(key, value);
+    form.append("referenceImages", fakeImageFile("sketch.png", 4));
+    form.append("referenceImages", fakeImageFile("photo.jpg", 4, "image/jpeg"));
+    const request = new Request("https://chenart.co/api/send-order", { method: "POST", body: form });
+
+    const res = await onRequestPost({ request, env: { RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com" } });
+    assert.equal(res.status, 200);
+
+    const payload = JSON.parse(resendCalledWith.body);
+    assert.equal(payload.attachments.length, 2);
+    assert.equal(payload.attachments[0].filename, "sketch.png");
+    assert.match(payload.attachments[0].content, /^[A-Za-z0-9+/]+=*$/);
+    assert.match(payload.text, /Reference images: 2 attached/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: omits attachments field entirely when no images are attached", async () => {
+  const { onRequestPost } = await fnPromise;
+  const originalFetch = globalThis.fetch;
+  let resendCalledWith = null;
+  globalThis.fetch = async (url, init) => {
+    resendCalledWith = init;
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    await onRequestPost({ request: fakeRequest(VALID_FIELDS), env: { RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com" } });
+    const payload = JSON.parse(resendCalledWith.body);
+    assert.equal(payload.attachments, undefined);
+    assert.match(payload.text, /Reference images: \(none\)/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("onRequestPost: Resend error response with no message uses the fallback text", async () => {
   const { onRequestPost } = await fnPromise;
   const originalFetch = globalThis.fetch;

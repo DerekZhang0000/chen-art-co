@@ -14,6 +14,9 @@
 //                     SELLER_EMAIL is the address your Resend account
 //                     itself is registered with.
 
+const MAX_REFERENCE_IMAGES = 5;
+const MAX_REFERENCE_IMAGE_BYTES = 6 * 1024 * 1024;
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -34,9 +37,20 @@ export async function onRequestPost(context) {
   const idea = (form.get("idea") || "").toString().trim();
   const timeline = (form.get("timeline") || "").toString().trim();
   const budget = (form.get("budget") || "").toString().trim();
+  const referenceImages = form.getAll("referenceImages").filter((f) => f instanceof File && f.size > 0);
 
   if (!name || !email || !garment || !idea) {
     return jsonResponse({ error: "Please fill in all required fields." }, 400);
+  }
+
+  if (referenceImages.length > MAX_REFERENCE_IMAGES) {
+    return jsonResponse({ error: `Please attach up to ${MAX_REFERENCE_IMAGES} images.` }, 400);
+  }
+  if (referenceImages.some((f) => f.size > MAX_REFERENCE_IMAGE_BYTES)) {
+    return jsonResponse({ error: "Each image must be 6MB or smaller." }, 400);
+  }
+  if (referenceImages.some((f) => !f.type.startsWith("image/"))) {
+    return jsonResponse({ error: "Reference attachments must be images." }, 400);
   }
 
   const fromEmail = env.FROM_EMAIL || "onboarding@resend.dev";
@@ -49,7 +63,15 @@ export async function onRequestPost(context) {
     `Idea: ${idea}`,
     `Timeline: ${timeline || "(not specified)"}`,
     `Budget: ${budget || "(not specified)"}`,
+    `Reference images: ${referenceImages.length ? `${referenceImages.length} attached` : "(none)"}`,
   ];
+
+  const attachments = await Promise.all(
+    referenceImages.map(async (file) => ({
+      filename: file.name || "reference-image",
+      content: await fileToBase64(file),
+    }))
+  );
 
   const resendRes = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -63,6 +85,7 @@ export async function onRequestPost(context) {
       reply_to: email,
       subject: `Custom order request from ${name}`,
       text: lines.join("\n"),
+      ...(attachments.length ? { attachments } : {}),
     }),
   });
 
@@ -79,4 +102,14 @@ function jsonResponse(data, status = 200) {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+async function fileToBase64(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 }

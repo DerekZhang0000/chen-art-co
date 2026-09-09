@@ -13,7 +13,7 @@ A few placeholders need to be swapped for the real thing:
 
 ## Custom order emails
 
-The Custom Orders form posts to `functions/api/send-order.js`, a Cloudflare Pages Function that emails the submission to you via [Resend](https://resend.com) — no third-party form service needed.
+The Custom Orders form posts to `functions/api/send-order.js`, a Cloudflare Pages Function that emails the submission to you via [Resend](https://resend.com) — no third-party form service needed. Customers can attach up to 5 reference images (6MB each), which are sent as email attachments.
 
 **One-time setup:**
 
@@ -60,6 +60,8 @@ That's it — `functions/api/create-checkout-session.js` deploys automatically a
 - `name`, `price`, `image`, and `description` come from this file.
 
 **`stock` in `products.json` is seed data only — not live.** Live stock (the number that actually decreases when someone buys) lives in a Cloudflare D1 database instead, set up in "Live inventory" below. **Adding a brand-new product touches two places**: an entry here in `products.json` *and* a row in D1 (via `db/seed.sql` or a manual `INSERT`) — a product missing from D1 shows as sold out by default, so don't forget the second step.
+
+**Test-only products.** A product with `"previewOnly": true` (like the built-in `preview-test-item`, a $0.50 item for exercising checkout end-to-end) is hidden from `/api/products` unless `SHOW_TEST_PRODUCTS=true` is set. Set that env var in **Preview** environment variables and in `.dev.vars` for local dev — **never in Production** — so test items never show up for real customers. A product with `"stock": -1` is also exempt from D1 entirely: it always reports unlimited stock and is skipped by the Stripe webhook's decrement step, so purchasing it never touches inventory (see `UNLIMITED_STOCK_PRODUCT_IDS` in `functions/_lib/inventory.js`).
 
 ## Live inventory (Cloudflare D1)
 

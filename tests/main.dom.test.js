@@ -183,3 +183,67 @@ test("main: a network-level fetch rejection shows the same fallback error text",
   assert.match(status.textContent, /Something went wrong/);
   assert.equal(status.className.includes("err"), true);
 });
+
+function stubFiles(input, files) {
+  Object.defineProperty(input, "files", { value: files, configurable: true });
+}
+
+test("main: more than 5 reference images blocks submission with an error and never calls fetch", async () => {
+  const dom = setup();
+  const { document } = dom.window;
+  const form = document.getElementById("order-form");
+  const referenceImages = document.getElementById("reference-images");
+  stubFiles(referenceImages, Array.from({ length: 6 }, (_, i) => new dom.window.File(["x"], `ref-${i}.png`, { type: "image/png" })));
+
+  let fetchCalled = false;
+  dom.window.fetch = async () => { fetchCalled = true; return { ok: true }; };
+
+  dispatchSubmit(dom, form);
+  await flushPromises();
+
+  assert.equal(fetchCalled, false);
+  const error = document.getElementById("reference-images-error");
+  assert.match(error.textContent, /up to 5 images/);
+  assert.equal(error.className.includes("show"), true);
+  assert.match(document.getElementById("form-status").textContent, /fix the reference images/);
+});
+
+test("main: a reference image over 6MB blocks submission with an error", async () => {
+  const dom = setup();
+  const { document } = dom.window;
+  const form = document.getElementById("order-form");
+  const referenceImages = document.getElementById("reference-images");
+  const bigFile = new dom.window.File(["x"], "big.png", { type: "image/png" });
+  Object.defineProperty(bigFile, "size", { value: 6 * 1024 * 1024 + 1 });
+  stubFiles(referenceImages, [bigFile]);
+
+  let fetchCalled = false;
+  dom.window.fetch = async () => { fetchCalled = true; return { ok: true }; };
+
+  dispatchSubmit(dom, form);
+  await flushPromises();
+
+  assert.equal(fetchCalled, false);
+  const error = document.getElementById("reference-images-error");
+  assert.match(error.textContent, /6MB or smaller/);
+});
+
+test("main: valid reference images submit normally and clear any prior error", async () => {
+  const dom = setup();
+  const { document } = dom.window;
+  const form = document.getElementById("order-form");
+  const referenceImages = document.getElementById("reference-images");
+  document.getElementById("name").value = "Ada";
+  stubFiles(referenceImages, [new dom.window.File(["x"], "sketch.png", { type: "image/png" })]);
+
+  let fetchCalled = false;
+  dom.window.fetch = async () => { fetchCalled = true; return { ok: true }; };
+
+  dispatchSubmit(dom, form);
+  await flushPromises();
+
+  assert.equal(fetchCalled, true);
+  const error = document.getElementById("reference-images-error");
+  assert.equal(error.className.includes("show"), false);
+  assert.match(document.getElementById("form-status").textContent, /Thanks!/);
+});

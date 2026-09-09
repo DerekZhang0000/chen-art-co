@@ -10,6 +10,7 @@ const products = [
   { id: "a", name: "A", price: 1000, image: "images/a.jpg", stock: 1 },
   { id: "b", name: "B", price: 2500, image: "images/b.jpg", stock: 3 },
   { id: "c", name: "C", price: 500, image: "images/c.jpg", stock: 0 },
+  { id: "unlimited", name: "Unlimited", price: 50, image: "images/logo.png", stock: -1 },
 ];
 
 // Hand-rolled D1 stub matching the .prepare(sql).bind(...ids).all() shape
@@ -133,6 +134,13 @@ test("buildLineItems: correct Stripe line-item shape for multiple valid items", 
       },
     },
   ]);
+});
+
+test("buildLineItems: an unlimited-stock (-1) product is never treated as sold out, regardless of quantity", async () => {
+  const { buildLineItems } = await fnPromise;
+  const result = buildLineItems([{ id: "unlimited", qty: 500 }], products, ORIGIN);
+  assert.equal(result.error, undefined);
+  assert.equal(result.lineItems[0].quantity, 500);
 });
 
 test("buildLineItems: also returns the aggregated {id, qty} pairs for webhook metadata", async () => {

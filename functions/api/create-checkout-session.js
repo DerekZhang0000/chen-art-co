@@ -110,14 +110,18 @@ export function buildLineItems(items, products, origin) {
   for (const [id, quantity] of quantities) {
     const product = products.find((p) => p.id === id);
 
-    if (!product.stock || product.stock < 1) {
-      return { error: `"${product.name}" just sold out.`, status: 409 };
-    }
-    if (quantity > product.stock) {
-      return {
-        error: `Only ${product.stock} left of "${product.name}" - please lower the quantity.`,
-        status: 409,
-      };
+    // stock -1 is the unlimited-stock sentinel (see inventory.js) - skip
+    // both checks entirely rather than reading it as "sold out"/"-1 left".
+    if (product.stock !== -1) {
+      if (!product.stock || product.stock < 1) {
+        return { error: `"${product.name}" just sold out.`, status: 409 };
+      }
+      if (quantity > product.stock) {
+        return {
+          error: `Only ${product.stock} left of "${product.name}" - please lower the quantity.`,
+          status: 409,
+        };
+      }
     }
 
     lineItems.push({

@@ -7,6 +7,7 @@ const products = [
   { id: "b", name: "B", price: 2500, stock: 3 },
   { id: "c", name: "C", price: 500, stock: 0 },
   { id: "d", name: "D", price: 750 }, // stock intentionally missing
+  { id: "unlimited", name: "Unlimited", price: 50, stock: -1 },
 ];
 
 // ---------- formatPrice ----------
@@ -68,6 +69,16 @@ test("cartSubtotal: ignores an entry whose id no longer resolves", () => {
   assert.equal(cart.cartSubtotal({ a: 1, ghost: 5 }, products), 1000);
 });
 
+// ---------- stockOf ----------
+
+test("stockOf: -1 (unlimited-stock sentinel) reports Infinity", () => {
+  assert.equal(cart.stockOf({ stock: -1 }), Infinity);
+});
+
+test("stockOf: a normal positive stock passes through unchanged", () => {
+  assert.equal(cart.stockOf({ stock: 3 }), 3);
+});
+
 // ---------- addItem ----------
 
 test("addItem: increments a fresh item", () => {
@@ -93,6 +104,11 @@ test("addItem: no-ops when stock is 0", () => {
 test("addItem: no-ops when stock is missing (the NaN-cart-corruption fix)", () => {
   const result = cart.addItem({}, products, "d");
   assert.deepEqual(result, {});
+});
+
+test("addItem: an unlimited-stock (-1) product is never capped", () => {
+  const result = cart.addItem({ unlimited: 999 }, products, "unlimited");
+  assert.deepEqual(result, { unlimited: 1000 });
 });
 
 // ---------- removeItem ----------
@@ -128,6 +144,10 @@ test("setItemQuantity: no-op on an unknown id", () => {
   assert.deepEqual(cart.setItemQuantity({ a: 1 }, products, "nope", 5), { a: 1 });
 });
 
+test("setItemQuantity: an unlimited-stock (-1) product is never clamped", () => {
+  assert.deepEqual(cart.setItemQuantity({}, products, "unlimited", 10000), { unlimited: 10000 });
+});
+
 // ---------- sanitizeCart ----------
 
 test("sanitizeCart: drops ids no longer in the catalog", () => {
@@ -140,4 +160,8 @@ test("sanitizeCart: clamps (does not delete) an over-stock quantity", () => {
 
 test("sanitizeCart: a clamped-to-0 entry is left in the cart object (intentional, matches prior behavior)", () => {
   assert.deepEqual(cart.sanitizeCart({ c: 1 }, products), { c: 0 });
+});
+
+test("sanitizeCart: an unlimited-stock (-1) product's quantity is left untouched", () => {
+  assert.deepEqual(cart.sanitizeCart({ unlimited: 5000 }, products), { unlimited: 5000 });
 });

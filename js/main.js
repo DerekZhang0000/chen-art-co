@@ -80,12 +80,45 @@
   // ---------- Order form ----------
   var form = document.getElementById("order-form");
   var status = document.getElementById("form-status");
+  var referenceImages = document.getElementById("reference-images");
+  var referenceImagesError = document.getElementById("reference-images-error");
+
+  var MAX_REFERENCE_IMAGES = 5;
+  var MAX_REFERENCE_IMAGE_BYTES = 6 * 1024 * 1024;
+
+  function validateReferenceImages() {
+    if (!referenceImages || !referenceImagesError) return true;
+
+    var files = Array.prototype.slice.call(referenceImages.files || []);
+    var error = "";
+
+    if (files.length > MAX_REFERENCE_IMAGES) {
+      error = "Please choose up to " + MAX_REFERENCE_IMAGES + " images.";
+    } else if (files.some(function (file) { return file.size > MAX_REFERENCE_IMAGE_BYTES; })) {
+      error = "Each image must be 6MB or smaller.";
+    }
+
+    referenceImagesError.textContent = error;
+    referenceImagesError.className = error ? "field-error show" : "field-error";
+    return !error;
+  }
+
+  if (referenceImages) {
+    referenceImages.addEventListener("change", validateReferenceImages);
+  }
 
   if (form && status) {
     form.addEventListener("submit", function (e) {
       var action = form.getAttribute("action") || "";
 
       e.preventDefault();
+
+      if (!validateReferenceImages()) {
+        status.className = "form-status show err";
+        status.textContent = "Please fix the reference images before sending.";
+        return;
+      }
+
       status.className = "form-status show";
       status.textContent = "Sending...";
 
@@ -96,7 +129,7 @@
       })
         .then(function (response) {
           if (response.ok) {
-            status.textContent = "Thanks! Your request is in — we'll reply by email soon.";
+            status.textContent = "Thanks! Your request is in. We'll reply by email soon.";
             status.className = "form-status show ok";
             form.reset();
           } else {

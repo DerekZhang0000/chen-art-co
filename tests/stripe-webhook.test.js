@@ -66,11 +66,30 @@ function fakeDb({ processedEventIds = new Set(), stockById = {} } = {}) {
   };
 }
 
-function checkoutCompletedEvent({ id = "evt_1", sessionId = "cs_1", items, paymentStatus = "paid" }) {
+function checkoutCompletedEvent({
+  id = "evt_1",
+  sessionId = "cs_1",
+  items,
+  paymentStatus = "paid",
+  customerDetails,
+  shippingDetails,
+  amountTotal,
+  currency,
+}) {
   return JSON.stringify({
     id,
     type: "checkout.session.completed",
-    data: { object: { id: sessionId, payment_status: paymentStatus, metadata: { items: JSON.stringify(items) } } },
+    data: {
+      object: {
+        id: sessionId,
+        payment_status: paymentStatus,
+        metadata: { items: JSON.stringify(items) },
+        customer_details: customerDetails,
+        shipping_details: shippingDetails,
+        amount_total: amountTotal,
+        currency,
+      },
+    },
   });
 }
 
@@ -268,5 +287,145 @@ test("onRequestPost: a decrement race (stock ran out) still returns 200 and logs
     assert.ok(logs.some((l) => /no effect/i.test(l)));
   } finally {
     console.error = originalError;
+  }
+});
+
+// ---------- order notification email ----------
+
+const RESEND_ENV = { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com" };
+
+test("onRequestPost: without RESEND_API_KEY/SELLER_EMAIL configured, no email is attempted", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({ items: [{ id: "a", qty: 1, name: "A", price: 1000 }] });
+  const db = fakeDb({ stockById: { a: 1 } });
+  let fetchCalled = false;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { fetchCalled = true; return new Response("{}", { status: 200 }); };
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, DB: db },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(fetchCalled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: a paid order emails the seller with items, quantities, buyer, and shipping address", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 2, name: "A", price: 1000 }, { id: "b", qty: 1, name: "B", price: 2500 }],
+    customerDetails: { email: "buyer@example.com", name: "Ada Lovelace" },
+    shippingDetails: {
+      name: "Ada Lovelace",
+      address: { line1: "123 Main St", line2: "Apt 4", city: "Springfield", state: "IL", postal_code: "62704", country: "US" },
+    },
+    amountTotal: 4500,
+    currency: "usd",
+  });
+  const db = fakeDb({ stockById: { a: 2, b: 1 } });
+
+  let resendCalledWith = null;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    resendCalledWith = { url: String(url), init };
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(resendCalledWith.url, "https://api.resend.com/emails");
+
+    const payload = JSON.parse(resendCalledWith.init.body);
+    assert.deepEqual(payload.to, ["seller@example.com"]);
+    assert.match(payload.subject, /Ada Lovelace/);
+    assert.match(payload.text, /2 x A \(\$10\.00 each\)/);
+    assert.match(payload.text, /1 x B \(\$25\.00 each\)/);
+    assert.match(payload.text, /buyer@example\.com/);
+    assert.match(payload.text, /123 Main St/);
+    assert.match(payload.text, /Springfield, IL 62704/);
+    assert.match(payload.text, /\$45\.00 USD/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: a redelivered (duplicate) event does not send a second notification email", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({ id: "evt_dup", items: [{ id: "a", qty: 1, name: "A", price: 1000 }] });
+  const db = fakeDb({ processedEventIds: new Set(["evt_dup"]), stockById: { a: 1 } });
+
+  let fetchCalled = false;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { fetchCalled = true; return new Response("{}", { status: 200 }); };
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(fetchCalled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: a Resend failure is logged but still returns 200 (doesn't undo the stock decrement)", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({ items: [{ id: "a", qty: 1, name: "A", price: 1000 }] });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ message: "Invalid API key" }), { status: 401 });
+
+  const originalError = console.error;
+  const logs = [];
+  console.error = (msg) => logs.push(msg);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(db.stockById.a, 0); // stock decrement still happened
+    assert.ok(logs.some((l) => /notification email failed/i.test(l)));
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.error = originalError;
+  }
+});
+
+test("onRequestPost: missing shipping/customer details on the session render as fallback text, not a crash", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({ items: [{ id: "a", qty: 1, name: "A", price: 1000 }] }); // no customerDetails/shippingDetails
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  let resendCalledWith = null;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    resendCalledWith = init;
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+    const payload = JSON.parse(resendCalledWith.body);
+    assert.match(payload.text, /\(not provided\)/);
+    assert.match(payload.text, /no shipping address on file/);
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 });

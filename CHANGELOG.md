@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-08 — Shipping Collection & Order Notification Emails
+
+- Checkout now collects a shipping address (US only for now) and charges a flat $7.50 shipping rate via Stripe's `shipping_address_collection`/`shipping_options`. An order made up entirely of unlimited-stock items (e.g. the $0.50 preview test item) gets free shipping instead, since there's nothing real to ship.
+- Once a payment actually clears, the seller now gets an order-notification email (items, quantities, prices, buyer contact, shipping address, and total) via the same Resend setup as the custom order form. Best-effort: a missing config or Resend failure never blocks checkout or stock accounting.
+- Expanded test coverage for checkout and webhook logic, including the new shipping params, free-shipping rule, and notification email (153 tests passing).
+
 ## 2026-09-08 — Reference Image Attachments & Preview Test Item
 
 - Custom order form: visitors can now attach up to 5 reference images (6MB each) directly in the form instead of emailing them separately afterward; images are sent as attachments via Resend, with matching client- and server-side validation.

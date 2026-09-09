@@ -143,14 +143,35 @@ test("buildLineItems: an unlimited-stock (-1) product is never treated as sold o
   assert.equal(result.lineItems[0].quantity, 500);
 });
 
-test("buildLineItems: also returns the aggregated {id, qty} pairs for webhook metadata", async () => {
+test("buildLineItems: an order of only unlimited-stock items gets free shipping", async () => {
+  const { buildLineItems } = await fnPromise;
+  const result = buildLineItems([{ id: "unlimited", qty: 2 }], products, ORIGIN);
+  assert.equal(result.freeShipping, true);
+});
+
+test("buildLineItems: a normal-stock order does not get free shipping", async () => {
+  const { buildLineItems } = await fnPromise;
+  const result = buildLineItems([{ id: "a", qty: 1 }], products, ORIGIN);
+  assert.equal(result.freeShipping, false);
+});
+
+test("buildLineItems: a mixed order (real item + unlimited-stock item) does not get free shipping", async () => {
+  const { buildLineItems } = await fnPromise;
+  const result = buildLineItems([{ id: "a", qty: 1 }, { id: "unlimited", qty: 1 }], products, ORIGIN);
+  assert.equal(result.freeShipping, false);
+});
+
+test("buildLineItems: also returns the aggregated {id, qty, name, price} for webhook metadata", async () => {
   const { buildLineItems } = await fnPromise;
   const result = buildLineItems(
     [{ id: "a", qty: 1 }, { id: "b", qty: 1 }, { id: "b", qty: 1 }],
     products,
     ORIGIN
   );
-  assert.deepEqual(result.items, [{ id: "a", qty: 1 }, { id: "b", qty: 2 }]);
+  assert.deepEqual(result.items, [
+    { id: "a", qty: 1, name: "A", price: 1000 },
+    { id: "b", qty: 2, name: "B", price: 2500 },
+  ]);
 });
 
 // ---------- toFormBody ----------
@@ -306,7 +327,48 @@ test("onRequestPost: happy path returns 200 with the Stripe session URL and meta
 
     const sentParams = new URLSearchParams(stripeCalledWith.body);
     const metadataItems = JSON.parse(sentParams.get("metadata[items]"));
-    assert.deepEqual(metadataItems, [{ id: "a", qty: 1 }, { id: "b", qty: 2 }]);
+    assert.deepEqual(metadataItems, [
+      { id: "a", qty: 1, name: "A", price: 1000 },
+      { id: "b", qty: 2, name: "B", price: 2500 },
+    ]);
+
+    assert.deepEqual(sentParams.getAll("shipping_address_collection[allowed_countries][0]"), ["US"]);
+    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][type]"), "fixed_amount");
+    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][fixed_amount][amount]"), "750");
+    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][fixed_amount][currency]"), "usd");
+    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][display_name]"), "Standard Shipping");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: an order of only the preview test item gets $0 (Free) shipping", async () => {
+  const { onRequestPost } = await fnPromise;
+  const catalog = [{ id: "preview-test-item", name: "Test Item", price: 50, image: "images/logo.png", stock: -1 }];
+  const originalFetch = globalThis.fetch;
+  let stripeCalledWith = null;
+
+  globalThis.fetch = async (url, init) => {
+    if (String(url).includes("products.json")) {
+      return new Response(JSON.stringify(catalog), { status: 200 });
+    }
+    if (String(url).includes("api.stripe.com")) {
+      stripeCalledWith = init;
+      return new Response(JSON.stringify({ url: "https://checkout.stripe.com/session/xyz" }), { status: 200 });
+    }
+    throw new Error("unexpected fetch: " + url);
+  };
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest({ items: [{ id: "preview-test-item", qty: 3 }] }),
+      env: { STRIPE_SECRET_KEY: "sk_test_x", DB: fakeDb({}) }, // no D1 row needed - unlimited stock is never looked up
+    });
+    assert.equal(res.status, 200);
+
+    const sentParams = new URLSearchParams(stripeCalledWith.body);
+    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][fixed_amount][amount]"), "0");
+    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][display_name]"), "Free Shipping");
   } finally {
     globalThis.fetch = originalFetch;
   }

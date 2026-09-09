@@ -12,6 +12,10 @@
 
 import { fetchCatalog, mergeLiveStock } from "../_lib/inventory.js";
 
+// Domestic-only for now - the studio doesn't currently ship internationally.
+const SHIPPING_COUNTRY = "US";
+const SHIPPING_RATE_CENTS = 750; // $7.50 flat rate
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -49,12 +53,24 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: result.error }, result.status);
   }
 
+  const shippingRateCents = result.freeShipping ? 0 : SHIPPING_RATE_CENTS;
+
   const params = {
     mode: "payment",
     success_url: `${url.origin}/?checkout=success#shop`,
     cancel_url: `${url.origin}/?checkout=cancel#shop`,
     line_items: result.lineItems,
     metadata: { items: JSON.stringify(result.items) },
+    shipping_address_collection: { allowed_countries: [SHIPPING_COUNTRY] },
+    shipping_options: [
+      {
+        shipping_rate_data: {
+          type: "fixed_amount",
+          fixed_amount: { amount: shippingRateCents, currency: "usd" },
+          display_name: shippingRateCents === 0 ? "Free Shipping" : "Standard Shipping",
+        },
+      },
+    ],
   };
 
   const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -139,7 +155,16 @@ export function buildLineItems(items, products, origin) {
 
   return {
     lineItems,
-    items: Array.from(quantities, ([id, qty]) => ({ id, qty })),
+    // name/price ride along in session metadata so the webhook can email a
+    // human-readable order summary without a second catalog fetch at
+    // decrement time - see stripe-webhook.js.
+    items: Array.from(quantities, ([id, qty]) => {
+      const product = products.find((p) => p.id === id);
+      return { id, qty, name: product.name, price: product.price };
+    }),
+    // Free shipping when every item in the order is unlimited-stock (stock
+    // -1, e.g. the preview test item) - there's nothing real to ship.
+    freeShipping: Array.from(quantities.keys()).every((id) => products.find((p) => p.id === id).stock === -1),
   };
 }
 

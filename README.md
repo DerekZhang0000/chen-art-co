@@ -42,6 +42,10 @@ That's it — `functions/api/create-checkout-session.js` deploys automatically a
 
 **Testing before going live:** with a `sk_test_...` key, use [Stripe's test card numbers](https://docs.stripe.com/testing#cards) (e.g. `4242 4242 4242 4242`, any future expiry, any CVC) to place a real test order end-to-end. Once you're happy, switch to your **live** secret key (`sk_live_...`) in the Cloudflare environment variable and redeploy.
 
+**Shipping:** Checkout collects a shipping address (US only for now) and charges a flat $7.50 rate, set via `SHIPPING_COUNTRY` / `SHIPPING_RATE_CENTS` at the top of `functions/api/create-checkout-session.js`.
+
+**Order notification email:** once a payment actually clears, `functions/api/stripe-webhook.js` emails you the order - items, quantities, buyer contact, shipping address, and total - via the same Resend setup as the custom order form (`RESEND_API_KEY`, `SELLER_EMAIL`, `FROM_EMAIL` - see "Custom order emails" above; no extra setup needed if that's already configured). This is best-effort: if those env vars aren't set, or Resend errors, checkout and stock accounting still work fine - it just skips the email (logging a warning to the Cloudflare Function's logs).
+
 **Managing products** — edit `data/products.json`. Each item looks like:
 
 ```json

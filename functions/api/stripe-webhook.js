@@ -26,9 +26,17 @@
 // Stripe SDK's Node-only signature helper doesn't apply, and this keeps the
 // function dependency-free (matching the rest of this codebase).
 //
+// Once stock is decremented, also emails the seller the order details (items,
+// quantities, buyer contact, shipping address, total) via Resend - the same
+// provider/account as the custom-order form (see send-order.js). This is
+// best-effort: RESEND_API_KEY/SELLER_EMAIL are optional here, and a failed
+// or skipped send never affects the 200 response or stock accounting above.
+//
 // Requires:
 //   STRIPE_WEBHOOK_SECRET  - signing secret from the Stripe webhook endpoint
 //   DB                     - D1 database binding (see wrangler.toml)
+//   RESEND_API_KEY, SELLER_EMAIL, FROM_EMAIL (optional) - order-notification
+//                          email; see send-order.js for what these mean.
 //
 // Set up the Stripe webhook endpoint (Developers -> Webhooks -> Add
 // endpoint) pointing at /api/stripe-webhook for both the
@@ -114,7 +122,78 @@ export async function onRequestPost(context) {
     }
   });
 
+  if (env.RESEND_API_KEY && env.SELLER_EMAIL) {
+    try {
+      await sendOrderNotificationEmail(session, items, env);
+    } catch (err) {
+      // Notification failure shouldn't undo the stock decrement above or
+      // make Stripe think the webhook itself failed (which would retry it).
+      console.error(`Order notification email failed for session ${session.id}: ${err.message}`);
+    }
+  }
+
   return new Response("ok", { status: 200 });
+}
+
+async function sendOrderNotificationEmail(session, items, env) {
+  const fromEmail = env.FROM_EMAIL || "onboarding@resend.dev";
+  const sellerEmails = env.SELLER_EMAIL.split(",").map((s) => s.trim()).filter(Boolean);
+
+  const buyerEmail = session.customer_details?.email || "(not provided)";
+  const buyerName = session.customer_details?.name || "(not provided)";
+
+  const lines = [
+    `Buyer: ${buyerName} <${buyerEmail}>`,
+    "",
+    "Items:",
+    ...items.map((item) => `  ${item.qty} x ${item.name || item.id} (${formatCents(item.price)} each)`),
+    "",
+    `Order total: ${formatCents(session.amount_total)} ${(session.currency || "usd").toUpperCase()}`,
+    "",
+    "Shipping address:",
+    formatShippingAddress(session.shipping_details),
+    "",
+    `Stripe session: ${session.id}`,
+  ];
+
+  const resendRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: fromEmail,
+      to: sellerEmails,
+      subject: `New order from ${buyerName !== "(not provided)" ? buyerName : buyerEmail}`,
+      text: lines.join("\n"),
+    }),
+  });
+
+  if (!resendRes.ok) {
+    const errorBody = await resendRes.json().catch(() => ({}));
+    throw new Error(errorBody.message || `Resend responded with ${resendRes.status}`);
+  }
+}
+
+function formatShippingAddress(shippingDetails) {
+  const address = shippingDetails?.address;
+  if (!address) return "  (no shipping address on file)";
+
+  return [
+    shippingDetails.name,
+    address.line1,
+    address.line2,
+    `${address.city || ""}, ${address.state || ""} ${address.postal_code || ""}`.trim(),
+    address.country,
+  ]
+    .filter(Boolean)
+    .map((line) => `  ${line}`)
+    .join("\n");
+}
+
+function formatCents(cents) {
+  return typeof cents === "number" ? "$" + (cents / 100).toFixed(2) : "$0.00";
 }
 
 export async function verifyStripeSignature(rawBody, signatureHeader, secret, toleranceSeconds = 300) {

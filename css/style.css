@@ -17,6 +17,7 @@
 
   --container: 1180px;
   --radius: 2px;
+  --header-height: 76px;
 }
 
 /* ---------- Reset & base ---------- */
@@ -126,7 +127,7 @@ section { padding: 96px 0; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 76px;
+  height: var(--header-height);
 }
 
 .logo-group {
@@ -431,16 +432,52 @@ video.hero-media {
   border-radius: 50%;
 }
 
-/* ---------- Shop ---------- */
-.shop-section { background: var(--paper); }
-.checkout-banner {
-  margin-bottom: 32px;
-  padding: 16px 20px;
+/* ---------- Notices (dismissible, fixed to the top of the viewport) ---------- */
+.notice-container {
+  position: fixed;
+  /* Sits below the sticky header (z-index: 50) so header nav/buttons stay
+     clickable underneath - only the notice itself (not this container)
+     re-enables pointer-events, but it still needs to start low enough to
+     not visually cover the header at all. */
+  top: calc(var(--header-height) + 1px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  pointer-events: none;
+}
+.notice {
+  pointer-events: auto;
+  position: relative;
+  max-width: 480px;
+  width: 100%;
+  padding: 14px 40px 14px 18px;
   background: var(--secondary);
   color: #fff;
   border-radius: var(--radius);
   font-size: 0.92rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
+.notice-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---------- Shop ---------- */
+.shop-section { background: var(--paper); }
 
 .shop-grid {
   display: grid;
@@ -467,6 +504,7 @@ video.hero-media {
 .product-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .product-body h4 { font-size: 1.05rem; margin-bottom: 0; }
 .product-desc { font-size: 0.88rem; color: rgba(0,0,0,0.6); flex: 1; }
+.product-attributes { font-size: 0.8rem; color: rgba(0,0,0,0.6); }
 .product-stock { font-size: 0.8rem; color: var(--primary); font-weight: 600; }
 
 .product-foot {
@@ -546,6 +584,7 @@ video.hero-media {
 .cart-item-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .cart-item-body h5 { margin: 0; font-size: 0.95rem; font-family: var(--sans); font-weight: 600; }
 .cart-item-price { font-size: 0.85rem; color: rgba(0,0,0,0.6); }
+.cart-item-attributes { font-size: 0.8rem; color: rgba(0,0,0,0.6); }
 
 .cart-item-qty {
   display: flex;

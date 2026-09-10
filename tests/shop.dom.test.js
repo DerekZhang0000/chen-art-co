@@ -15,7 +15,7 @@ function jsonResponse(data, ok = true) {
 function setup({ fetchImpl, url } = {}) {
   const dom = createDom({ url });
   if (fetchImpl) dom.window.fetch = fetchImpl;
-  injectScripts(dom, ["js/util.js", "js/cart.js", "js/shop.js"]);
+  injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]);
   return dom;
 }
 
@@ -48,6 +48,29 @@ test("shop: renders product cards from the catalog with correct prices and butto
   assert.equal(missingStockBtn.textContent, "Sold out");
   assert.equal(missingStockBtn.disabled, true);
   assert.equal(cards[2].querySelector(".product-stock"), null);
+});
+
+test("shop: a product's optional attributes (e.g. size) render on the card; products without any show nothing extra", async () => {
+  const dom = await setupWithCatalog([
+    { id: "sized", name: "Sized Item", price: 3000, image: "images/a.jpg", description: "Desc", stock: 1, attributes: { size: "Large" } },
+    { id: "no-attrs", name: "Plain Item", price: 1000, image: "images/b.jpg", description: "Desc", stock: 1 },
+  ]);
+  const { document } = dom.window;
+  const cards = document.querySelectorAll(".product-card");
+
+  assert.equal(cards[0].querySelector(".product-attributes").textContent, "Size: Large");
+  assert.equal(cards[1].querySelector(".product-attributes"), null);
+});
+
+test("shop: a sized item's attributes also show up in the cart drawer", async () => {
+  const dom = await setupWithCatalog([
+    { id: "sized", name: "Sized Item", price: 3000, image: "images/a.jpg", description: "Desc", stock: 1, attributes: { size: "Large" } },
+  ]);
+  const { document } = dom.window;
+
+  document.querySelector(".product-add").click();
+
+  assert.equal(document.querySelector(".cart-item-attributes").textContent, "Size: Large");
 });
 
 test("shop: an unlimited-stock (-1) product never shows sold out or a stock badge, and stays addable", async () => {
@@ -155,7 +178,7 @@ test("shop: checkout success calls the API with the cart contents and takes the 
     checkoutRequestBody = JSON.parse(init.body);
     return jsonResponse({ url: "https://checkout.stripe.com/session/abc" });
   };
-  injectScripts(dom, ["js/util.js", "js/cart.js", "js/shop.js"]);
+  injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]);
   await flushPromises();
 
   dom.window.document.querySelectorAll(".product-add")[0].click();
@@ -174,7 +197,7 @@ test("shop: a non-JSON checkout error response shows the friendly fallback, not 
     if (String(url).includes("api/products")) return jsonResponse(STOCK_PRODUCTS);
     return { ok: false, text: async () => "Not found" };
   };
-  injectScripts(dom, ["js/util.js", "js/cart.js", "js/shop.js"]);
+  injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]);
   await flushPromises();
 
   dom.window.document.querySelectorAll(".product-add")[0].click();
@@ -193,7 +216,7 @@ test("shop: a JSON checkout error response shows that exact message", async () =
     if (String(url).includes("api/products")) return jsonResponse(STOCK_PRODUCTS);
     return { ok: false, text: async () => JSON.stringify({ error: "Only 1 left." }) };
   };
-  injectScripts(dom, ["js/util.js", "js/cart.js", "js/shop.js"]);
+  injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]);
   await flushPromises();
 
   dom.window.document.querySelectorAll(".product-add")[0].click();
@@ -211,9 +234,11 @@ test("shop: ?checkout=success clears the cart and shows the banner", async () =>
   const dom = createDom({ url: "https://chenart.co/?checkout=success#shop" });
   dom.window.fetch = async () => jsonResponse(STOCK_PRODUCTS);
   // Cart clearing happens synchronously, before the products fetch resolves.
-  injectScripts(dom, ["js/util.js", "js/cart.js", "js/shop.js"]);
+  injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]);
 
-  assert.equal(dom.window.document.getElementById("checkout-success").hidden, false);
+  const notice = dom.window.document.querySelector('.notice[data-notice-type="checkout-success"]');
+  assert.ok(notice, "expected a checkout-success notice to appear");
+  assert.match(notice.querySelector(".notice-text").textContent, /Thanks for your order/);
   assert.equal(dom.window.localStorage.getItem("chenArtCart"), "{}");
   // The success param must not survive a refresh, or the banner would show forever.
   assert.equal(dom.window.location.search, "");
@@ -226,7 +251,7 @@ test("shop: a saved cart referencing a since-deleted product is dropped after lo
   const dom = createDom();
   dom.window.localStorage.setItem("chenArtCart", JSON.stringify({ "deleted-product": 2 }));
   dom.window.fetch = async () => jsonResponse(STOCK_PRODUCTS);
-  injectScripts(dom, ["js/util.js", "js/cart.js", "js/shop.js"]);
+  injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]);
   await flushPromises();
 
   assert.equal(dom.window.document.getElementById("cart-count").hidden, true);

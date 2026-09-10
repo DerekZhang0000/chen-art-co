@@ -73,7 +73,10 @@ function checkoutCompletedEvent({
   paymentStatus = "paid",
   customerDetails,
   shippingDetails,
+  collectedInformationShippingDetails,
   amountTotal,
+  amountSubtotal,
+  totalDetails,
   currency,
 }) {
   return JSON.stringify({
@@ -86,7 +89,12 @@ function checkoutCompletedEvent({
         metadata: { items: JSON.stringify(items) },
         customer_details: customerDetails,
         shipping_details: shippingDetails,
+        ...(collectedInformationShippingDetails
+          ? { collected_information: { shipping_details: collectedInformationShippingDetails } }
+          : {}),
         amount_total: amountTotal,
+        amount_subtotal: amountSubtotal,
+        total_details: totalDetails,
         currency,
       },
     },
@@ -294,6 +302,23 @@ test("onRequestPost: a decrement race (stock ran out) still returns 200 and logs
 
 const RESEND_ENV = { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com" };
 
+// Both order emails now embed images by fetching them from `origin` first
+// (see fetchImageAttachment in stripe-webhook.js) - those are plain GET
+// fetches with no `init`, one per item image (+ the logo for the buyer
+// email), interleaved with the actual POSTs to Resend. Helpers below let
+// tests ignore the image fetches and focus on the Resend calls.
+function resendCallsOnly(calls) {
+  return calls.filter((c) => c.url === "https://api.resend.com/emails");
+}
+
+function recordingFetch(calls, { imageResponse } = {}) {
+  return async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (!init) return imageResponse ?? new Response("fake-image-bytes", { status: 200 });
+    return new Response("{}", { status: 200 });
+  };
+}
+
 test("onRequestPost: without RESEND_API_KEY/SELLER_EMAIL configured, no email is attempted", async () => {
   const { onRequestPost } = await fnPromise;
   const body = checkoutCompletedEvent({ items: [{ id: "a", qty: 1, name: "A", price: 1000 }] });
@@ -314,10 +339,13 @@ test("onRequestPost: without RESEND_API_KEY/SELLER_EMAIL configured, no email is
   }
 });
 
-test("onRequestPost: a paid order emails the seller with items, quantities, buyer, and shipping address", async () => {
+test("onRequestPost: a paid order emails the seller with items (+ thumbnails), quantities, buyer, and shipping address", async () => {
   const { onRequestPost } = await fnPromise;
   const body = checkoutCompletedEvent({
-    items: [{ id: "a", qty: 2, name: "A", price: 1000 }, { id: "b", qty: 1, name: "B", price: 2500 }],
+    items: [
+      { id: "a", qty: 2, name: "A", price: 1000, image: "images/a.jpg" },
+      { id: "b", qty: 1, name: "B", price: 2500, image: "images/b.jpg" },
+    ],
     customerDetails: { email: "buyer@example.com", name: "Ada Lovelace" },
     shippingDetails: {
       name: "Ada Lovelace",
@@ -328,12 +356,9 @@ test("onRequestPost: a paid order emails the seller with items, quantities, buye
   });
   const db = fakeDb({ stockById: { a: 2, b: 1 } });
 
-  let resendCalledWith = null;
+  const calls = [];
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (url, init) => {
-    resendCalledWith = { url: String(url), init };
-    return new Response("{}", { status: 200 });
-  };
+  globalThis.fetch = recordingFetch(calls);
 
   try {
     const res = await onRequestPost({
@@ -341,10 +366,12 @@ test("onRequestPost: a paid order emails the seller with items, quantities, buye
       env: { ...RESEND_ENV, DB: db },
     });
     assert.equal(res.status, 200);
-    assert.equal(resendCalledWith.url, "https://api.resend.com/emails");
+    const resendCalls = resendCallsOnly(calls);
+    assert.equal(resendCalls.length, 2); // seller + buyer
 
-    const payload = JSON.parse(resendCalledWith.init.body);
-    assert.deepEqual(payload.to, ["seller@example.com"]);
+    const sellerCall = resendCalls.find((c) => JSON.parse(c.init.body).to.includes("seller@example.com"));
+
+    const payload = JSON.parse(sellerCall.init.body);
     assert.match(payload.subject, /Ada Lovelace/);
     assert.match(payload.text, /2 x A \(\$10\.00 each\)/);
     assert.match(payload.text, /1 x B \(\$25\.00 each\)/);
@@ -352,8 +379,271 @@ test("onRequestPost: a paid order emails the seller with items, quantities, buye
     assert.match(payload.text, /123 Main St/);
     assert.match(payload.text, /Springfield, IL 62704/);
     assert.match(payload.text, /\$45\.00 USD/);
+    assert.match(payload.html, /<img[^>]+src="cid:item-0"/);
+    assert.match(payload.html, /<img[^>]+src="cid:item-1"/);
+    assert.deepEqual(
+      payload.attachments.map((a) => a.content_id),
+      ["item-0", "item-1"]
+    );
+    assert.ok(payload.attachments.every((a) => a.content && a.filename));
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: reads the shipping address from collected_information.shipping_details on newer API versions", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000 }],
+    customerDetails: { email: "buyer@example.com", name: "Ada Lovelace" },
+    // No top-level shippingDetails here - only the nested shape newer Stripe
+    // API versions ("Clover" and later) actually populate.
+    collectedInformationShippingDetails: {
+      name: "Ada Lovelace",
+      address: { line1: "123 Main St", city: "Springfield", state: "IL", postal_code: "62704", country: "US" },
+    },
+    amountTotal: 1000,
+    currency: "usd",
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+
+    const sellerCall = resendCallsOnly(calls).find((c) => JSON.parse(c.init.body).to.includes("seller@example.com"));
+    const payload = JSON.parse(sellerCall.init.body);
+    assert.match(payload.text, /123 Main St/);
+    assert.match(payload.text, /Springfield, IL 62704/);
+    assert.doesNotMatch(payload.text, /no shipping address on file/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: both order emails show a subtotal/shipping/tax breakdown", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000 }],
+    customerDetails: { email: "buyer@example.com", name: "Ada Lovelace" },
+    amountTotal: 1183,
+    amountSubtotal: 1000,
+    totalDetails: { amount_shipping: 100, amount_tax: 83 },
+    currency: "usd",
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+
+    const resendCalls = resendCallsOnly(calls);
+    const sellerPayload = JSON.parse(resendCalls.find((c) => JSON.parse(c.init.body).to.includes("seller@example.com")).init.body);
+    const buyerPayload = JSON.parse(resendCalls.find((c) => JSON.parse(c.init.body).to.includes("buyer@example.com")).init.body);
+
+    for (const payload of [sellerPayload, buyerPayload]) {
+      assert.match(payload.text, /Subtotal: \$10\.00/);
+      assert.match(payload.text, /Shipping: \$1\.00/);
+      assert.match(payload.text, /Tax: \$0\.83/);
+      assert.match(payload.text, /Order total: \$11\.83 USD/);
+      assert.match(payload.html, /Subtotal: \$10\.00/);
+      assert.match(payload.html, /Shipping: \$1\.00/);
+      assert.match(payload.html, /Tax: \$0\.83/);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: missing amount_subtotal/total_details render as $0.00, not a crash", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000 }],
+    customerDetails: { email: "buyer@example.com" },
+    amountTotal: 1000,
+    currency: "usd",
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+
+    const sellerPayload = JSON.parse(resendCallsOnly(calls).find((c) => JSON.parse(c.init.body).to.includes("seller@example.com")).init.body);
+    assert.match(sellerPayload.text, /Subtotal: \$0\.00/);
+    assert.match(sellerPayload.text, /Shipping: \$0\.00/);
+    assert.match(sellerPayload.text, /Tax: \$0\.00/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: a paid order also emails the buyer a branded HTML confirmation", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 2, name: "A", price: 1000, image: "images/a.jpg" }],
+    customerDetails: { email: "buyer@example.com", name: "Ada Lovelace" },
+    shippingDetails: {
+      name: "Ada Lovelace",
+      address: { line1: "123 Main St", city: "Springfield", state: "IL", postal_code: "62704", country: "US" },
+    },
+    amountTotal: 2000,
+    currency: "usd",
+  });
+  const db = fakeDb({ stockById: { a: 2 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+
+    const buyerCall = resendCallsOnly(calls).find((c) => JSON.parse(c.init.body).to.includes("buyer@example.com"));
+    assert.ok(buyerCall, "expected a Resend call addressed to the buyer");
+
+    const payload = JSON.parse(buyerCall.init.body);
+    assert.equal(payload.subject, "Your Chen Art Co. order confirmation");
+    assert.match(payload.html, /Thank you for your order, Ada Lovelace/);
+    assert.match(payload.html, /<img[^>]+src="cid:item-0"/);
+    assert.match(payload.html, /Qty 2/);
+    assert.match(payload.html, /\$20\.00 USD/);
+    assert.match(payload.html, /123 Main St/);
+    assert.match(payload.text, /2 x A \(\$10\.00 each\)/);
+    assert.match(payload.text, /\$20\.00 USD/);
+    assert.deepEqual(
+      payload.attachments.map((a) => a.content_id).sort(),
+      ["item-0", "logo"]
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: an item's optional attributes (e.g. size) show up in both order emails when present", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [
+      { id: "a", qty: 1, name: "Gojo Satoru Portrait Crewneck", price: 5000, attributes: { size: "Large" } },
+      { id: "b", qty: 1, name: "B", price: 2500 }, // no attributes - should render exactly as before
+    ],
+    customerDetails: { email: "buyer@example.com", name: "Ada Lovelace" },
+    amountTotal: 7500,
+    currency: "usd",
+  });
+  const db = fakeDb({ stockById: { a: 1, b: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+
+    const resendCalls = resendCallsOnly(calls);
+    const sellerPayload = JSON.parse(resendCalls.find((c) => JSON.parse(c.init.body).to.includes("seller@example.com")).init.body);
+    const buyerPayload = JSON.parse(resendCalls.find((c) => JSON.parse(c.init.body).to.includes("buyer@example.com")).init.body);
+
+    for (const payload of [sellerPayload, buyerPayload]) {
+      assert.match(payload.text, /Gojo Satoru Portrait Crewneck \(Size: Large\)/);
+      assert.match(payload.html, /Size: Large/);
+      // The item with no attributes gets no "(Size: ...)" or empty parens.
+      assert.match(payload.text, /1 x B \(\$25\.00 each\)/);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: the buyer email fires even when SELLER_EMAIL isn't configured", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000 }],
+    customerDetails: { email: "buyer@example.com" },
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", DB: db }, // no SELLER_EMAIL
+    });
+    assert.equal(res.status, 200);
+    const resendCalls = resendCallsOnly(calls);
+    assert.equal(resendCalls.length, 1); // seller skipped, buyer sent
+    const payload = JSON.parse(resendCalls[0].init.body);
+    assert.deepEqual(payload.to, ["buyer@example.com"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: a Resend failure on the buyer email doesn't block the seller email (or vice versa)", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000 }],
+    customerDetails: { email: "buyer@example.com" },
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (!init) return new Response("fake-image-bytes", { status: 200 }); // image fetch, not a Resend call
+    const payload = JSON.parse(init.body);
+    if (payload.to.includes("buyer@example.com")) {
+      return new Response(JSON.stringify({ message: "Invalid API key" }), { status: 401 });
+    }
+    return new Response("{}", { status: 200 });
+  };
+
+  const originalError = console.error;
+  const logs = [];
+  console.error = (msg) => logs.push(msg);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+    assert.ok(logs.some((l) => /Buyer confirmation email failed/i.test(l)));
+    assert.ok(!logs.some((l) => /Seller order notification email failed/i.test(l)));
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.error = originalError;
   }
 });
 

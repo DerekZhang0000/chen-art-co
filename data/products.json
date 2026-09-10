@@ -5,7 +5,8 @@
     "price": 5000,
     "image": "images/anime-shirt.jpg",
     "description": "Gojo Satoru portrait embroidered in a framed panel on a white crewneck.",
-    "stock": 2
+    "stock": 2,
+    "attributes": { "size": "Large" }
   },
   {
     "id": "frieren-staff-sword-crewneck-white",
@@ -13,7 +14,8 @@
     "price": 5000,
     "image": "images/frieren-staff-and-sword-shirt-1.jpg",
     "description": "Staff-and-sword crest with blue roses embroidered on a white crewneck.",
-    "stock": 1
+    "stock": 1,
+    "attributes": { "size": "Large" }
   },
   {
     "id": "frieren-staff-sword-crewneck-grey",
@@ -21,7 +23,8 @@
     "price": 5000,
     "image": "images/frieren-staff-and-sword-shirt-2.jpg",
     "description": "Staff-and-sword crest with blue roses embroidered on a grey crewneck.",
-    "stock": 1
+    "stock": 1,
+    "attributes": { "size": "Medium" }
   },
   {
     "id": "frieren-staff-sword-crewneck-navy",
@@ -29,7 +32,8 @@
     "price": 6700,
     "image": "images/frieren-staff-and-sword-shirt-3.jpg",
     "description": "Staff-and-sword crest with blue roses embroidered on a navy Champion crewneck.",
-    "stock": 1
+    "stock": 1,
+    "attributes": { "size": "Medium" }
   },
   {
     "id": "mahoraga-domain-expansion-tee",
@@ -37,7 +41,8 @@
     "price": 5000,
     "image": "images/mahoraga-low-key-shirt.jpg",
     "description": "Subtle tone-on-tone Mahoraga emblem embroidered on a black crewneck.",
-    "stock": 1
+    "stock": 1,
+    "attributes": { "size": "Large" }
   },
   {
     "id": "mahoraga-wings-crewneck",
@@ -45,7 +50,8 @@
     "price": 5000,
     "image": "images/mahoraga-shirt-d.jpg",
     "description": "Gold crossed-wings emblem embroidered on a black crewneck.",
-    "stock": 1
+    "stock": 1,
+    "attributes": { "size": "Medium" }
   },
   {
     "id": "six-eyes-crewneck",
@@ -53,7 +59,8 @@
     "price": 5000,
     "image": "images/six-eyes-shirt.jpg",
     "description": "Six embroidered eyes with \"Six Eyes\" lettering on a navy crewneck.",
-    "stock": 1
+    "stock": 1,
+    "attributes": { "size": "Medium" }
   },
   {
     "id": "six-eyes-crewneck-no-text",
@@ -61,7 +68,8 @@
     "price": 5000,
     "image": "images/six-eyes-shirt-no-text.jpg",
     "description": "Six embroidered eyes design on a black crewneck.",
-    "stock": 1
+    "stock": 1,
+    "attributes": { "size": "Medium" }
   },
   {
     "id": "preview-test-item",
@@ -70,6 +78,7 @@
     "image": "images/logo.png",
     "description": "Internal item for testing checkout end-to-end. Unlimited stock, never shown in production.",
     "stock": -1,
-    "previewOnly": true
+    "previewOnly": true,
+    "attributes": { "test": "Sample Value" }
   }
 ]

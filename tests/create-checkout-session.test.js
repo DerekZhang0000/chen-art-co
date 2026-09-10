@@ -11,6 +11,7 @@ const products = [
   { id: "b", name: "B", price: 2500, image: "images/b.jpg", stock: 3 },
   { id: "c", name: "C", price: 500, image: "images/c.jpg", stock: 0 },
   { id: "unlimited", name: "Unlimited", price: 50, image: "images/logo.png", stock: -1 },
+  { id: "sized", name: "Sized", price: 3000, image: "images/sized.jpg", stock: 2, attributes: { size: "Large" } },
 ];
 
 // Hand-rolled D1 stub matching the .prepare(sql).bind(...ids).all() shape
@@ -143,25 +144,25 @@ test("buildLineItems: an unlimited-stock (-1) product is never treated as sold o
   assert.equal(result.lineItems[0].quantity, 500);
 });
 
-test("buildLineItems: an order of only unlimited-stock items gets free shipping", async () => {
+test("buildLineItems: an order of only unlimited-stock items gets nominal ($0.01) shipping", async () => {
   const { buildLineItems } = await fnPromise;
   const result = buildLineItems([{ id: "unlimited", qty: 2 }], products, ORIGIN);
-  assert.equal(result.freeShipping, true);
+  assert.equal(result.shippingRateCents, 1);
 });
 
-test("buildLineItems: a normal-stock order does not get free shipping", async () => {
+test("buildLineItems: a normal-stock order gets the standard shipping rate", async () => {
   const { buildLineItems } = await fnPromise;
   const result = buildLineItems([{ id: "a", qty: 1 }], products, ORIGIN);
-  assert.equal(result.freeShipping, false);
+  assert.equal(result.shippingRateCents, 750);
 });
 
-test("buildLineItems: a mixed order (real item + unlimited-stock item) does not get free shipping", async () => {
+test("buildLineItems: a mixed order (real item + unlimited-stock item) gets the standard shipping rate", async () => {
   const { buildLineItems } = await fnPromise;
   const result = buildLineItems([{ id: "a", qty: 1 }, { id: "unlimited", qty: 1 }], products, ORIGIN);
-  assert.equal(result.freeShipping, false);
+  assert.equal(result.shippingRateCents, 750);
 });
 
-test("buildLineItems: also returns the aggregated {id, qty, name, price} for webhook metadata", async () => {
+test("buildLineItems: also returns the aggregated {id, qty, name, price, image} for webhook metadata", async () => {
   const { buildLineItems } = await fnPromise;
   const result = buildLineItems(
     [{ id: "a", qty: 1 }, { id: "b", qty: 1 }, { id: "b", qty: 1 }],
@@ -169,8 +170,17 @@ test("buildLineItems: also returns the aggregated {id, qty, name, price} for web
     ORIGIN
   );
   assert.deepEqual(result.items, [
-    { id: "a", qty: 1, name: "A", price: 1000 },
-    { id: "b", qty: 2, name: "B", price: 2500 },
+    { id: "a", qty: 1, name: "A", price: 1000, image: "images/a.jpg" },
+    { id: "b", qty: 2, name: "B", price: 2500, image: "images/b.jpg" },
+  ]);
+});
+
+test("buildLineItems: a product's optional attributes ride along in the metadata item when present", async () => {
+  const { buildLineItems } = await fnPromise;
+  const result = buildLineItems([{ id: "a", qty: 1 }, { id: "sized", qty: 1 }], products, ORIGIN);
+  assert.deepEqual(result.items, [
+    { id: "a", qty: 1, name: "A", price: 1000, image: "images/a.jpg" },
+    { id: "sized", qty: 1, name: "Sized", price: 3000, image: "images/sized.jpg", attributes: { size: "Large" } },
   ]);
 });
 
@@ -328,8 +338,8 @@ test("onRequestPost: happy path returns 200 with the Stripe session URL and meta
     const sentParams = new URLSearchParams(stripeCalledWith.body);
     const metadataItems = JSON.parse(sentParams.get("metadata[items]"));
     assert.deepEqual(metadataItems, [
-      { id: "a", qty: 1, name: "A", price: 1000 },
-      { id: "b", qty: 2, name: "B", price: 2500 },
+      { id: "a", qty: 1, name: "A", price: 1000, image: "images/a.jpg" },
+      { id: "b", qty: 2, name: "B", price: 2500, image: "images/b.jpg" },
     ]);
 
     assert.deepEqual(sentParams.getAll("shipping_address_collection[allowed_countries][0]"), ["US"]);
@@ -337,12 +347,28 @@ test("onRequestPost: happy path returns 200 with the Stripe session URL and meta
     assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][fixed_amount][amount]"), "750");
     assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][fixed_amount][currency]"), "usd");
     assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][display_name]"), "Standard Shipping");
+
+    // Card-only and a required billing address guarantee every order has a
+    // name, email, and shipping address - see create-checkout-session.js.
+    assert.deepEqual(sentParams.getAll("payment_method_types[0]"), ["card"]);
+    assert.equal(sentParams.get("billing_address_collection"), "required");
+
+    // Accurate wording on Stripe's post-payment confirmation screen now
+    // that this app sends its own buyer confirmation email too.
+    assert.equal(
+      sentParams.get("custom_text[after_submit][message]"),
+      "You'll receive an order confirmation email from Chen Art Co. shortly."
+    );
+
+    // Stripe Tax must already be enabled in the Dashboard for this - see
+    // create-checkout-session.js.
+    assert.equal(sentParams.get("automatic_tax[enabled]"), "true");
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("onRequestPost: an order of only the preview test item gets $0 (Free) shipping", async () => {
+test("onRequestPost: an order of only the preview test item gets $0.01 (nominal) shipping", async () => {
   const { onRequestPost } = await fnPromise;
   const catalog = [{ id: "preview-test-item", name: "Test Item", price: 50, image: "images/logo.png", stock: -1 }];
   const originalFetch = globalThis.fetch;
@@ -367,8 +393,8 @@ test("onRequestPost: an order of only the preview test item gets $0 (Free) shipp
     assert.equal(res.status, 200);
 
     const sentParams = new URLSearchParams(stripeCalledWith.body);
-    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][fixed_amount][amount]"), "0");
-    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][display_name]"), "Free Shipping");
+    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][fixed_amount][amount]"), "1");
+    assert.equal(sentParams.get("shipping_options[0][shipping_rate_data][display_name]"), "Standard Shipping");
   } finally {
     globalThis.fetch = originalFetch;
   }

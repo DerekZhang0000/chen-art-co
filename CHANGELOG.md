@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-09 — Order Confirmation Emails, Checkout Hardening & Shop Enhancements
+
+- Buyers now get a branded HTML order-confirmation email (plain-text fallback) via Resend once payment clears; the seller's existing email gained item thumbnails. Both show a full cost breakdown (subtotal, shipping, tax, total) and the shipping address, embed images inline instead of linking to the live site, and send independently of each other.
+- Checkout is now card-only with a required billing address, and Link is disabled in the Stripe Dashboard, so every order always has a name, email, and shipping address. Fixed the shipping address not showing up due to this Stripe account's newer API version nesting it under `collected_information`. Enabled Stripe Tax (`automatic_tax`) and added accurate post-payment confirmation text.
+- Products can now carry an optional, modular `attributes` object (e.g. size) shown on the shop page, cart, and both order emails - sizes set for every crewneck.
+- The checkout-success message is now a dismissible popup fixed below the sticky header instead of an inline banner, generalized for future notice types.
+- Test item: price lowered to $0.49, free shipping replaced with a nominal $0.01 charge.
+- Expanded test coverage across the board (171 tests passing).
+
 ## 2026-09-08 — Shipping Collection & Order Notification Emails
 
 - Checkout now collects a shipping address (US only for now) and charges a flat $7.50 shipping rate via Stripe's `shipping_address_collection`/`shipping_options`. An order made up entirely of unlimited-stock items (e.g. the $0.50 preview test item) gets free shipping instead, since there's nothing real to ship.

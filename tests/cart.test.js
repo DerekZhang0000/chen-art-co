@@ -43,6 +43,21 @@ test("escapeHtml: non-string input is coerced", () => {
   assert.equal(cart.escapeHtml(42), "42");
 });
 
+// ---------- formatAttributes ----------
+
+test("formatAttributes: a single key renders as 'Key: value'", () => {
+  assert.equal(cart.formatAttributes({ size: "Large" }), "Size: Large");
+});
+
+test("formatAttributes: multiple keys join with a comma", () => {
+  assert.equal(cart.formatAttributes({ size: "Large", color: "Black" }), "Size: Large, Color: Black");
+});
+
+test("formatAttributes: null/undefined become an empty string", () => {
+  assert.equal(cart.formatAttributes(null), "");
+  assert.equal(cart.formatAttributes(undefined), "");
+});
+
 // ---------- findProduct ----------
 
 test("findProduct: found and not-found", () => {

@@ -44,7 +44,19 @@ That's it — `functions/api/create-checkout-session.js` deploys automatically a
 
 **Shipping:** Checkout collects a shipping address (US only for now) and charges a flat $7.50 rate, set via `SHIPPING_COUNTRY` / `SHIPPING_RATE_CENTS` at the top of `functions/api/create-checkout-session.js`.
 
-**Order notification email:** once a payment actually clears, `functions/api/stripe-webhook.js` emails you the order - items, quantities, buyer contact, shipping address, and total - via the same Resend setup as the custom order form (`RESEND_API_KEY`, `SELLER_EMAIL`, `FROM_EMAIL` - see "Custom order emails" above; no extra setup needed if that's already configured). This is best-effort: if those env vars aren't set, or Resend errors, checkout and stock accounting still work fine - it just skips the email (logging a warning to the Cloudflare Function's logs).
+**Tax:** Checkout sets `automatic_tax: { enabled: true }`, so Stripe calculates real tax based on the buyer's shipping address. **This requires Stripe Tax to already be enabled in the Dashboard** (Settings → Tax, with an origin address configured) — if you ever disable Stripe Tax there, also remove `automatic_tax` from `create-checkout-session.js`, or every checkout will fail outright.
+
+**Payment methods:** Checkout is intentionally restricted to `payment_method_types: ["card"]`, with `billing_address_collection: "required"`. This is deliberate, not an oversight — an alternative method like Link can complete checkout via a saved one-click profile without a name or shipping address ever being collected, which broke both order emails below. Don't re-enable Link (or other Dashboard-toggleable express/wallet methods) without also re-verifying that a name, email, and shipping address are always present on the resulting session.
+
+**Important:** `payment_method_types: ["card"]` alone does *not* fully suppress Link — a recognized Link user (by email) still gets the "Continue with Link" prompt, a Link express-checkout button, and a "Bank" (Instant Debits via Link) payment tab, all of which can skip the shipping/name form. Link is partly controlled account-wide, independent of a session's `payment_method_types`. To actually turn it off, disable **Link** in the Stripe Dashboard under **Settings → Payment methods** (do this in both test/sandbox and live mode).
+
+**Order emails:** once a payment actually clears, `functions/api/stripe-webhook.js` sends two emails via the same Resend setup as the custom order form (`RESEND_API_KEY`, `SELLER_EMAIL`, `FROM_EMAIL` - see "Custom order emails" above; no extra setup needed if that's already configured):
+- **Seller notification** - a plain-text summary (items with thumbnails, quantities, buyer contact, shipping address, total) to `SELLER_EMAIL`.
+- **Buyer confirmation** - a branded HTML receipt to whatever email address the buyer entered at Stripe Checkout. Needs only `RESEND_API_KEY` (not `SELLER_EMAIL`) - there's no separate config for the buyer's address.
+
+Item thumbnails and the logo in both emails are embedded inline (fetched server-side and attached via Resend's `content_id`/CID mechanism, not linked to the live site) — this renders correctly under local dev too, where the site's `origin` is `localhost` and unreachable from a real inbox.
+
+The two sends are independent - each is best-effort on its own, so a missing env var or a Resend error on one never blocks checkout, stock accounting, or the other email. Failures are logged to the Cloudflare Function's logs.
 
 **Managing products** — edit `data/products.json`. Each item looks like:
 
@@ -79,7 +91,7 @@ Stock now updates automatically when a sale completes, instead of needing a manu
 4. In the Stripe Dashboard: **Developers → Webhooks → Add endpoint** → URL is your site's `/api/stripe-webhook` (e.g. `https://chenart.co/api/stripe-webhook`) → events to send: `checkout.session.completed` **and** `checkout.session.async_payment_succeeded` (the second one covers delayed payment methods like bank debits, which complete the checkout session before the payment itself actually clears) → copy the signing secret it gives you.
 5. Add that secret as `STRIPE_WEBHOOK_SECRET` in **Settings → Environment variables** (Secret, both Production and Preview) — same pattern as `STRIPE_SECRET_KEY`.
 
-**Testing locally:** once `wrangler.toml`'s `[[d1_databases]]` block exists, `npm run dev` auto-provisions a local D1 (no cloud credentials needed) — see "Running it locally" below for the one-time local schema/seed step. To test the webhook itself, install the [Stripe CLI](https://docs.stripe.com/stripe-cli), run `stripe listen --forward-to localhost:8788/api/stripe-webhook` (copy the local webhook secret it prints into `.dev.vars` as `STRIPE_WEBHOOK_SECRET`), then `stripe trigger checkout.session.completed`.
+**Testing locally:** once `wrangler.toml`'s `[[d1_databases]]` block exists, `npm run dev` auto-provisions a local D1 (no cloud credentials needed) — see "Running it locally" below for the one-time local schema/seed step. Stripe can't deliver webhooks to `localhost` directly, so `npm run dev` also runs `stripe listen --forward-to localhost:8788/api/stripe-webhook` alongside wrangler (via `concurrently`) — install the [Stripe CLI](https://docs.stripe.com/stripe-cli) and run `stripe login` once first. The first time, copy the webhook signing secret `stripe listen` prints (`Ready! Your webhook signing secret is whsec_...`) into `.dev.vars` as `STRIPE_WEBHOOK_SECRET` and restart `npm run dev` — it's stable for this Stripe account, so this is a one-time step, not a per-run one. Then either place a real test-mode order through checkout, or run `stripe trigger checkout.session.completed` in another terminal.
 
 ## Maintenance mode (LaunchDarkly)
 

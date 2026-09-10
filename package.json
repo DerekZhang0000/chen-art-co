@@ -4,9 +4,10 @@
   "description": "Chen Art Co. website - static site with a Cloudflare Pages Function for Stripe checkout.",
   "scripts": {
     "test": "node --test",
-    "dev": "npx.cmd wrangler pages dev ."
+    "dev": "concurrently -k -n wrangler,stripe -c blue,magenta \"npx.cmd wrangler pages dev .\" \"stripe listen --forward-to localhost:8788/api/stripe-webhook\""
   },
   "devDependencies": {
+    "concurrently": "^10.0.5",
     "jsdom": "^25.0.0"
   }
 }

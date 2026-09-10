@@ -25,6 +25,19 @@
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // Turns a product's optional, modular `attributes` bag (e.g. { size:
+  // "Large" }) into a human-readable string like "Size: Large" - generic
+  // over whatever keys are present so future attributes need no changes
+  // here. Mirrors formatAttributes in functions/api/stripe-webhook.js.
+  function formatAttributes(attributes) {
+    if (!attributes) return "";
+    return Object.keys(attributes)
+      .map(function (key) {
+        return key.charAt(0).toUpperCase() + key.slice(1) + ": " + attributes[key];
+      })
+      .join(", ");
+  }
+
   function findProduct(products, id) {
     for (var i = 0; i < products.length; i++) {
       if (products[i].id === id) return products[i];
@@ -94,6 +107,7 @@
   var api = {
     formatPrice: formatPrice,
     escapeHtml: escapeHtml,
+    formatAttributes: formatAttributes,
     findProduct: findProduct,
     stockOf: stockOf,
     cartTotalQuantity: cartTotalQuantity,

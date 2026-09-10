@@ -16,7 +16,6 @@
   var cartSubtotalEl = document.getElementById("cart-subtotal");
   var cartCheckoutBtn = document.getElementById("cart-checkout");
   var cartErrorEl = document.getElementById("cart-error");
-  var checkoutBanner = document.getElementById("checkout-success");
 
   if (!shopGrid) return;
 
@@ -39,6 +38,8 @@
 
   var formatPrice = ChenCart.formatPrice;
   var escapeHtml = ChenCart.escapeHtml;
+  var formatAttributes = ChenCart.formatAttributes;
+  var showNotice = ChenNotices.show;
 
   function findProduct(id) {
     return ChenCart.findProduct(products, id);
@@ -64,6 +65,7 @@
         '<div class="product-body">' +
         "<h4>" + escapeHtml(product.name) + "</h4>" +
         '<p class="product-desc">' + escapeHtml(product.description) + "</p>" +
+        (product.attributes ? '<p class="product-attributes">' + escapeHtml(formatAttributes(product.attributes)) + "</p>" : "") +
         (soldOut || !isFinite(stock) ? "" : '<span class="product-stock">Only ' + stock + " left</span>") +
         '<div class="product-foot">' +
         '<span class="product-price">' + formatPrice(product.price) + "</span>" +
@@ -145,6 +147,7 @@
         '<img src="' + product.image + '" alt="' + escapeHtml(product.name) + '" />' +
         '<div class="cart-item-body">' +
         "<h5>" + escapeHtml(product.name) + "</h5>" +
+        (product.attributes ? '<span class="cart-item-attributes">' + escapeHtml(formatAttributes(product.attributes)) + "</span>" : "") +
         '<span class="cart-item-price">' + formatPrice(product.price) + "</span>" +
         '<div class="cart-item-qty">' +
         '<button type="button" class="qty-btn" data-action="dec" aria-label="Decrease quantity">&minus;</button>' +
@@ -233,7 +236,7 @@
   if (params.get("checkout") === "success") {
     cart = {};
     saveCart();
-    if (checkoutBanner) checkoutBanner.hidden = false;
+    showNotice("checkout-success", "Thanks for your order! You'll get an email receipt shortly.");
     window.history.replaceState({}, "", window.location.pathname + window.location.hash);
   }
 

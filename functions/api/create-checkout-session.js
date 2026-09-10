@@ -15,6 +15,11 @@ import { fetchCatalog, mergeLiveStock } from "../_lib/inventory.js";
 // Domestic-only for now - the studio doesn't currently ship internationally.
 const SHIPPING_COUNTRY = "US";
 const SHIPPING_RATE_CENTS = 750; // $7.50 flat rate
+// Orders made up entirely of unlimited-stock items (e.g. the preview test
+// item) have nothing real to ship, but still get charged a nominal $0.01
+// rather than $0 so a full checkout - including a non-zero shipping line -
+// can be tested end-to-end.
+const NOMINAL_SHIPPING_RATE_CENTS = 1;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -53,7 +58,7 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: result.error }, result.status);
   }
 
-  const shippingRateCents = result.freeShipping ? 0 : SHIPPING_RATE_CENTS;
+  const shippingRateCents = result.shippingRateCents;
 
   const params = {
     mode: "payment",
@@ -61,13 +66,29 @@ export async function onRequestPost(context) {
     cancel_url: `${url.origin}/?checkout=cancel#shop`,
     line_items: result.lineItems,
     metadata: { items: JSON.stringify(result.items) },
+    // Card-only, on purpose: alternative methods like Link can complete
+    // checkout via a saved one-click profile without surfacing the
+    // shipping/name form below, so a name/email/address wouldn't be
+    // guaranteed. "required" billing address collection similarly ensures
+    // customer_details.name is always populated, not just the email.
+    payment_method_types: ["card"],
+    billing_address_collection: "required",
     shipping_address_collection: { allowed_countries: [SHIPPING_COUNTRY] },
+    // Requires Stripe Tax to be enabled in the Dashboard (Settings -> Tax,
+    // with an origin address configured) - turning this on without that
+    // done first makes Stripe reject every checkout outright.
+    automatic_tax: { enabled: true },
+    custom_text: {
+      after_submit: {
+        message: "You'll receive an order confirmation email from Chen Art Co. shortly.",
+      },
+    },
     shipping_options: [
       {
         shipping_rate_data: {
           type: "fixed_amount",
           fixed_amount: { amount: shippingRateCents, currency: "usd" },
-          display_name: shippingRateCents === 0 ? "Free Shipping" : "Standard Shipping",
+          display_name: "Standard Shipping",
         },
       },
     ],
@@ -155,16 +176,31 @@ export function buildLineItems(items, products, origin) {
 
   return {
     lineItems,
-    // name/price ride along in session metadata so the webhook can email a
-    // human-readable order summary without a second catalog fetch at
-    // decrement time - see stripe-webhook.js.
+    // name/price/image ride along in session metadata so the webhook can
+    // email a human-readable order summary (with thumbnails) without a
+    // second catalog fetch at decrement time - see stripe-webhook.js.
     items: Array.from(quantities, ([id, qty]) => {
       const product = products.find((p) => p.id === id);
-      return { id, qty, name: product.name, price: product.price };
+      return {
+        id,
+        qty,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        // Optional, modular per-product properties (e.g. size) - only
+        // included when present, so products without any keep the exact
+        // same metadata shape as before. See stripe-webhook.js for how
+        // these are displayed in the order emails.
+        ...(product.attributes ? { attributes: product.attributes } : {}),
+      };
     }),
-    // Free shipping when every item in the order is unlimited-stock (stock
-    // -1, e.g. the preview test item) - there's nothing real to ship.
-    freeShipping: Array.from(quantities.keys()).every((id) => products.find((p) => p.id === id).stock === -1),
+    // Nominal ($0.01) shipping when every item in the order is
+    // unlimited-stock (stock -1, e.g. the preview test item) - there's
+    // nothing real to ship, but a real (non-zero) shipping line still needs
+    // to be testable end-to-end.
+    shippingRateCents: Array.from(quantities.keys()).every((id) => products.find((p) => p.id === id).stock === -1)
+      ? NOMINAL_SHIPPING_RATE_CENTS
+      : SHIPPING_RATE_CENTS,
   };
 }
 

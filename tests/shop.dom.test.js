@@ -97,6 +97,53 @@ test("shop: the products fetch rejecting shows the fallback message", async () =
   assert.match(grid.textContent, /Couldn't load the shop/);
 });
 
+test("shop: doesn't crash when shop-grid is absent from the page (nothing to wire up)", () => {
+  const dom = createDom();
+  const shopGrid = dom.window.document.getElementById("shop-grid");
+  shopGrid.parentNode.removeChild(shopGrid);
+  assert.doesNotThrow(() => injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]));
+});
+
+test("shop: an empty catalog shows the 'nothing in stock' message", async () => {
+  const dom = await setupWithCatalog([]);
+  const { document } = dom.window;
+  assert.match(document.getElementById("shop-grid").textContent, /Nothing in stock right now/);
+});
+
+test("shop: a malformed saved cart in localStorage is treated as empty instead of crashing script load", async () => {
+  const dom = createDom();
+  dom.window.localStorage.setItem("chenArtCart", "{not valid json");
+  dom.window.fetch = async () => jsonResponse(STOCK_PRODUCTS);
+  injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]);
+  await flushPromises();
+
+  // Script execution must have continued past the malformed-JSON parse (the
+  // whole IIFE would otherwise have thrown at `var cart = loadCart();` and
+  // none of this would be wired up at all).
+  assert.equal(dom.window.document.querySelectorAll(".product-card").length, STOCK_PRODUCTS.length);
+  assert.equal(dom.window.document.getElementById("cart-count").hidden, true);
+});
+
+test("shop: a localStorage.setItem failure (e.g. private browsing) doesn't stop the cart from updating in memory", async () => {
+  const dom = await setupWithCatalog(STOCK_PRODUCTS);
+  // jsdom's Storage is a legacy platform object - assigning an own property
+  // named `setItem` on the instance is treated as a *storage item* named
+  // "setItem", not a method override, so the prototype has to be patched
+  // instead for the stub to actually intercept calls.
+  const storageProto = Object.getPrototypeOf(dom.window.localStorage);
+  const originalSetItem = storageProto.setItem;
+  storageProto.setItem = () => {
+    throw new Error("QuotaExceededError");
+  };
+
+  try {
+    assert.doesNotThrow(() => dom.window.document.querySelectorAll(".product-add")[0].click());
+    assert.equal(dom.window.document.getElementById("cart-count").textContent, "1");
+  } finally {
+    storageProto.setItem = originalSetItem;
+  }
+});
+
 // ---------- add to cart ----------
 
 test("shop: add to cart updates the badge and opens the drawer", async () => {
@@ -156,11 +203,72 @@ test("shop: cart-item remove button removes the item", async () => {
   assert.equal(document.getElementById("cart-count").hidden, true);
 });
 
+// ---------- cart drawer open/close ----------
+
+test("shop: cartToggle opens the drawer and cartClose closes it", async () => {
+  const dom = await setupWithCatalog(STOCK_PRODUCTS);
+  const { document } = dom.window;
+
+  document.getElementById("cart-toggle").click();
+  assert.equal(document.getElementById("cart-drawer").classList.contains("open"), true);
+  assert.equal(document.getElementById("cart-overlay").hidden, false);
+
+  document.getElementById("cart-close").click();
+  assert.equal(document.getElementById("cart-drawer").classList.contains("open"), false);
+  assert.equal(document.getElementById("cart-drawer").getAttribute("aria-hidden"), "true");
+  assert.equal(document.getElementById("cart-overlay").hidden, true);
+});
+
+test("shop: clicking the cart overlay closes the drawer", async () => {
+  const dom = await setupWithCatalog(STOCK_PRODUCTS);
+  const { document } = dom.window;
+
+  document.getElementById("cart-toggle").click();
+  document.getElementById("cart-overlay").click();
+
+  assert.equal(document.getElementById("cart-drawer").classList.contains("open"), false);
+});
+
+test("shop: pressing Escape closes the cart drawer", async () => {
+  const dom = await setupWithCatalog(STOCK_PRODUCTS);
+  const { document } = dom.window;
+
+  document.getElementById("cart-toggle").click();
+  assert.equal(document.getElementById("cart-drawer").classList.contains("open"), true);
+
+  document.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape" }));
+  assert.equal(document.getElementById("cart-drawer").classList.contains("open"), false);
+});
+
 // ---------- checkout ----------
 
 test("shop: checkout button is disabled with an empty cart (no fetch call possible)", async () => {
   const dom = await setupWithCatalog(STOCK_PRODUCTS);
   assert.equal(dom.window.document.getElementById("cart-checkout").disabled, true);
+});
+
+test("shop: clicking checkout with only zero-quantity cart entries is a no-op (no fetch call)", async () => {
+  // A saved cart entry clamped to 0 stock stays in the cart object rather
+  // than being deleted (see cart.test.js's sanitizeCart tests) - simulate
+  // that state directly to reach the checkout handler's own empty-items
+  // guard, bypassing the (also-true) disabled attribute on the button.
+  const dom = createDom();
+  dom.window.localStorage.setItem("chenArtCart", JSON.stringify({ "in-stock": 0 }));
+  dom.window.fetch = async () => jsonResponse(STOCK_PRODUCTS);
+  injectScripts(dom, ["js/util.js", "js/cart.js", "js/notices.js", "js/shop.js"]);
+  await flushPromises();
+
+  const { document } = dom.window;
+  const checkoutBtn = document.getElementById("cart-checkout");
+  assert.equal(checkoutBtn.disabled, true);
+  checkoutBtn.disabled = false;
+
+  let fetchCalled = false;
+  dom.window.fetch = async () => { fetchCalled = true; return jsonResponse({}); };
+  checkoutBtn.click();
+  await flushPromises();
+
+  assert.equal(fetchCalled, false);
 });
 
 test("shop: checkout success calls the API with the cart contents and takes the success path (not the error path)", async () => {

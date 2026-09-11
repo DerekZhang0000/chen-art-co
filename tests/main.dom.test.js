@@ -8,6 +8,14 @@ function setup() {
   return dom;
 }
 
+function setupWithoutElement(id) {
+  const dom = createDom();
+  const el = dom.window.document.getElementById(id);
+  el.parentNode.removeChild(el);
+  injectScripts(dom, ["js/main.js"]);
+  return dom;
+}
+
 // ---------- mobile nav ----------
 
 test("main: nav toggle opens and closes across two clicks, updating aria-expanded", () => {
@@ -37,6 +45,10 @@ test("main: clicking a nav link closes the menu", () => {
   nav.querySelector("a").click();
   assert.equal(nav.classList.contains("open"), false);
   assert.equal(toggle.getAttribute("aria-expanded"), "false");
+});
+
+test("main: doesn't crash when nav-toggle is absent from the page (nothing to wire up)", () => {
+  assert.doesNotThrow(() => setupWithoutElement("nav-toggle"));
 });
 
 // ---------- footer year ----------
@@ -118,6 +130,43 @@ test("main: clicking inside the lightbox content does not close it", () => {
   assert.equal(lightbox.classList.contains("open"), true);
 });
 
+test("main: doesn't crash when lightbox-close is absent (nothing to wire up)", () => {
+  assert.doesNotThrow(() => setupWithoutElement("lightbox-close"));
+});
+
+test("main: doesn't crash when the lightbox itself is absent (nothing to wire up)", () => {
+  assert.doesNotThrow(() => setupWithoutElement("lightbox"));
+});
+
+test("main: lightbox image alt falls back to '' when the gallery item has no <img> child", () => {
+  const dom = createDom();
+  const { document } = dom.window;
+  document.getElementById("gallery-grid").insertAdjacentHTML(
+    "beforeend",
+    '<button class="gallery-item" data-full="images/no-alt.jpg" data-type="image"></button>'
+  );
+  injectScripts(dom, ["js/main.js"]);
+
+  const item = document.querySelectorAll(".gallery-item");
+  item[item.length - 1].click();
+
+  assert.equal(document.querySelector("#lightbox-content img").getAttribute("alt"), "");
+});
+
+test("main: video poster falls back to '' when data-poster is absent", () => {
+  const dom = createDom();
+  const { document } = dom.window;
+  document.getElementById("gallery-grid").insertAdjacentHTML(
+    "beforeend",
+    '<button class="gallery-item" data-full="videos/sample.mp4" data-type="video"><img src="images/sample-poster.jpg" alt="" /></button>'
+  );
+  injectScripts(dom, ["js/main.js"]);
+
+  document.querySelector('.gallery-item[data-type="video"]').click();
+
+  assert.equal(document.querySelector("#lightbox-content video").getAttribute("poster"), "");
+});
+
 // ---------- order form ----------
 
 function dispatchSubmit(dom, form) {
@@ -125,6 +174,23 @@ function dispatchSubmit(dom, form) {
   form.dispatchEvent(event);
   return event;
 }
+
+test("main: validateReferenceImages treats a null `files` property as no files", async () => {
+  const dom = setup();
+  const { document } = dom.window;
+  const form = document.getElementById("order-form");
+  const referenceImages = document.getElementById("reference-images");
+  Object.defineProperty(referenceImages, "files", { value: null, configurable: true });
+  document.getElementById("name").value = "Ada";
+
+  let fetchCalled = false;
+  dom.window.fetch = async () => { fetchCalled = true; return { ok: true }; };
+
+  dispatchSubmit(dom, form);
+  await flushPromises();
+
+  assert.equal(fetchCalled, true); // no files -> nothing to reject
+});
 
 test("main: submitting the order form intercepts the submit and posts to the configured action", () => {
   const dom = setup();
@@ -226,6 +292,43 @@ test("main: a reference image over 6MB blocks submission with an error", async (
   assert.equal(fetchCalled, false);
   const error = document.getElementById("reference-images-error");
   assert.match(error.textContent, /6MB or smaller/);
+});
+
+test("main: skips reference-image validation entirely when those elements are absent from the page", async () => {
+  const dom = setupWithoutElement("reference-images-error");
+  const { document } = dom.window;
+  const form = document.getElementById("order-form");
+  document.getElementById("name").value = "Ada";
+
+  let fetchCalled = false;
+  dom.window.fetch = async () => { fetchCalled = true; return { ok: true }; };
+
+  dispatchSubmit(dom, form);
+  await flushPromises();
+
+  assert.equal(fetchCalled, true);
+});
+
+test("main: doesn't crash when order-form/form-status are absent (nothing to wire up)", () => {
+  assert.doesNotThrow(() => setupWithoutElement("order-form"));
+});
+
+test("main: a form with no action attribute posts to '' instead of crashing", async () => {
+  const dom = createDom();
+  const { document } = dom.window;
+  document.getElementById("order-form").removeAttribute("action");
+  injectScripts(dom, ["js/main.js"]);
+
+  const form = document.getElementById("order-form");
+  document.getElementById("name").value = "Ada";
+
+  let requestedUrl = null;
+  dom.window.fetch = async (url) => { requestedUrl = url; return { ok: true }; };
+
+  dispatchSubmit(dom, form);
+  await flushPromises();
+
+  assert.equal(requestedUrl, "");
 });
 
 test("main: valid reference images submit normally and clear any prior error", async () => {

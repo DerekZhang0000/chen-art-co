@@ -68,6 +68,11 @@ export async function onRequestPost(context) {
 
   const attachments = await Promise.all(
     referenceImages.map(async (file) => ({
+      // A File with a genuinely empty name doesn't survive a real multipart
+      // Request/formData() roundtrip as a File at all (it's dropped by the
+      // `instanceof File` filter above), so this fallback can't be exercised
+      // through the real upload path - kept as a defensive default anyway.
+      /* node:coverage ignore next */
       filename: file.name || "reference-image",
       content: await fileToBase64(file),
     }))

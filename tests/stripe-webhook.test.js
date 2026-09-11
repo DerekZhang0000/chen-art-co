@@ -144,6 +144,23 @@ test("verifyStripeSignature: a stale timestamp is rejected", async () => {
   assert.equal(await verifyStripeSignature(body, header, SECRET), false);
 });
 
+test("verifyStripeSignature: accepts a header with multiple v1 signatures if any of them matches (secret rotation)", async () => {
+  const { verifyStripeSignature } = await fnPromise;
+  const body = '{"hello":"world"}';
+  const timestamp = Math.floor(Date.now() / 1000);
+  const goodSig = await signPayload(body, SECRET, timestamp);
+  const header = `t=${timestamp},v1=deadbeef,v1=${goodSig}`;
+  assert.equal(await verifyStripeSignature(body, header, SECRET), true);
+});
+
+test("verifyStripeSignature: a v1 value of a different length than the computed signature is rejected", async () => {
+  const { verifyStripeSignature } = await fnPromise;
+  const body = '{"hello":"world"}';
+  const timestamp = Math.floor(Date.now() / 1000);
+  const header = `t=${timestamp},v1=short`;
+  assert.equal(await verifyStripeSignature(body, header, SECRET), false);
+});
+
 // ---------- onRequestPost ----------
 
 test("onRequestPost: missing STRIPE_WEBHOOK_SECRET returns 500", async () => {
@@ -296,6 +313,42 @@ test("onRequestPost: a decrement race (stock ran out) still returns 200 and logs
   } finally {
     console.error = originalError;
   }
+});
+
+test("onRequestPost: a session with no metadata at all defaults items to an empty list (no decrement, no crash)", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = JSON.stringify({
+    id: "evt_no_meta",
+    type: "checkout.session.completed",
+    data: { object: { id: "cs_no_meta", payment_status: "paid" } }, // no metadata field
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const res = await onRequestPost({
+    request: fakeRequest(body, await signedHeader(body, SECRET)),
+    env: { STRIPE_WEBHOOK_SECRET: SECRET, DB: db },
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(db.stockById.a, 1); // nothing to decrement
+});
+
+test("onRequestPost: malformed JSON in session.metadata.items falls back to an empty items list", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = JSON.stringify({
+    id: "evt_bad_meta",
+    type: "checkout.session.completed",
+    data: { object: { id: "cs_bad_meta", payment_status: "paid", metadata: { items: "not valid json" } } },
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const res = await onRequestPost({
+    request: fakeRequest(body, await signedHeader(body, SECRET)),
+    env: { STRIPE_WEBHOOK_SECRET: SECRET, DB: db },
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(db.stockById.a, 1); // nothing to decrement
 });
 
 // ---------- order notification email ----------
@@ -715,6 +768,219 @@ test("onRequestPost: missing shipping/customer details on the session render as 
     const payload = JSON.parse(resendCalledWith.body);
     assert.match(payload.text, /\(not provided\)/);
     assert.match(payload.text, /no shipping address on file/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: an item with no name falls back to its id in both order emails", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "sku-123", qty: 1, price: 1000 }], // no name field
+    customerDetails: { email: "buyer@example.com" },
+  });
+  const db = fakeDb({ stockById: { "sku-123": 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+
+    const resendCalls = resendCallsOnly(calls);
+    for (const call of resendCalls) {
+      const payload = JSON.parse(call.init.body);
+      assert.match(payload.text, /sku-123/);
+      assert.match(payload.html, /sku-123/);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: a Resend error response with a non-JSON body still logs a fallback message (seller email)", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({ items: [{ id: "a", qty: 1, name: "A", price: 1000 }] }); // no customerDetails - buyer email skipped
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (!init) return new Response("fake-image-bytes", { status: 200 });
+    return new Response("not json", { status: 500 });
+  };
+
+  const originalError = console.error;
+  const logs = [];
+  console.error = (msg) => logs.push(msg);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com", DB: db },
+    });
+    assert.equal(res.status, 200);
+    assert.ok(logs.some((l) => /Seller order notification email failed.*Resend responded with 500/i.test(l)));
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.error = originalError;
+  }
+});
+
+test("onRequestPost: a Resend error response with a non-JSON body still logs a fallback message (buyer email)", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000 }],
+    customerDetails: { email: "buyer@example.com" },
+  }); // no SELLER_EMAIL - seller email skipped
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (!init) return new Response("fake-image-bytes", { status: 200 });
+    return new Response("not json", { status: 500 });
+  };
+
+  const originalError = console.error;
+  const logs = [];
+  console.error = (msg) => logs.push(msg);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", DB: db },
+    });
+    assert.equal(res.status, 200);
+    assert.ok(logs.some((l) => /Buyer confirmation email failed.*Resend responded with 500/i.test(l)));
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.error = originalError;
+  }
+});
+
+test("onRequestPost: items with no image attach nothing (no attachments key) to the seller email", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000 }], // no image field
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com", DB: db },
+    });
+    assert.equal(res.status, 200);
+    const payload = JSON.parse(resendCallsOnly(calls)[0].init.body);
+    assert.equal("attachments" in payload, false);
+    assert.equal(calls.filter((c) => !c.init).length, 0); // no image fetch was attempted at all
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: a failed logo fetch falls back to no logo image, with no attachments key, on the buyer email", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000, image: "images/a.jpg" }],
+    customerDetails: { email: "buyer@example.com" },
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls, { imageResponse: new Response("", { status: 404 }) });
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", DB: db },
+    });
+    assert.equal(res.status, 200);
+    const payload = JSON.parse(resendCallsOnly(calls)[0].init.body);
+    assert.equal("attachments" in payload, false);
+    assert.doesNotMatch(payload.html, /src="cid:logo"/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: an image fetch that throws (network error) is treated the same as a failed fetch", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({ items: [{ id: "a", qty: 1, name: "A", price: 1000, image: "images/a.jpg" }] });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (!init) throw new Error("network down");
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com", DB: db },
+    });
+    assert.equal(res.status, 200); // doesn't crash the whole email
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: an image path ending in a slash falls back to a generic 'image' filename", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({ items: [{ id: "a", qty: 1, name: "A", price: 1000, image: "images/" }] });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: "re_x", SELLER_EMAIL: "seller@example.com", DB: db },
+    });
+    assert.equal(res.status, 200);
+    const payload = JSON.parse(resendCallsOnly(calls)[0].init.body);
+    assert.equal(payload.attachments[0].filename, "image");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("onRequestPost: a partial shipping address (missing city/state/postal_code) doesn't fall back to 'no address on file'", async () => {
+  const { onRequestPost } = await fnPromise;
+  const body = checkoutCompletedEvent({
+    items: [{ id: "a", qty: 1, name: "A", price: 1000 }],
+    customerDetails: { email: "buyer@example.com" },
+    shippingDetails: { name: "Ada Lovelace", address: { line1: "123 Main St", country: "US" } },
+  });
+  const db = fakeDb({ stockById: { a: 1 } });
+
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = recordingFetch(calls);
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(body, await signedHeader(body, SECRET)),
+      env: { ...RESEND_ENV, DB: db },
+    });
+    assert.equal(res.status, 200);
+    for (const call of resendCallsOnly(calls)) {
+      const payload = JSON.parse(call.init.body);
+      assert.match(payload.text, /123 Main St/);
+      assert.doesNotMatch(payload.text, /no shipping address on file/);
+    }
   } finally {
     globalThis.fetch = originalFetch;
   }

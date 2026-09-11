@@ -118,9 +118,15 @@
     sanitizeCart: sanitizeCart,
   };
 
+  // See the matching comment in js/util.js: both branches here are actually
+  // exercised (require() in this file's own test, window injection via
+  // domHarness elsewhere), but Node's coverage tool can't merge branch
+  // coverage across those two separate script compilations.
+  /* node:coverage ignore next 5 */
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   } else {
     root.ChenCart = api;
   }
+  /* node:coverage ignore next */
 })(typeof window !== "undefined" ? window : globalThis);

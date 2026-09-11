@@ -234,6 +234,24 @@ test("onRequestPost: valid reference images are sent as base64 Resend attachment
   }
 });
 
+test("onRequestPost: a Resend error response with a non-JSON body still uses the fallback error text", async () => {
+  const { onRequestPost } = await fnPromise;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("not json", { status: 500 });
+
+  try {
+    const res = await onRequestPost({
+      request: fakeRequest(VALID_FIELDS),
+      env: { RESEND_API_KEY: "re_bad", SELLER_EMAIL: "seller@example.com" },
+    });
+    const body = await res.json();
+    assert.equal(res.status, 502);
+    assert.match(body.error, /Couldn't send the request/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("onRequestPost: omits attachments field entirely when no images are attached", async () => {
   const { onRequestPost } = await fnPromise;
   const originalFetch = globalThis.fetch;

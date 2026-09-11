@@ -255,6 +255,15 @@ test("onRequestPost: empty items returns 400", async () => {
   assert.equal(res.status, 400);
 });
 
+test("onRequestPost: a non-array `items` field is treated as an empty cart (400)", async () => {
+  const { onRequestPost } = await fnPromise;
+  const res = await onRequestPost({
+    request: fakeRequest({ items: "not-an-array" }),
+    env: { STRIPE_SECRET_KEY: "sk_test_x", DB: DEFAULT_DB },
+  });
+  assert.equal(res.status, 400);
+});
+
 test("onRequestPost: malformed request body returns 400", async () => {
   const { onRequestPost } = await fnPromise;
   const badRequest = new Request("https://chenart.co/api/create-checkout-session", {

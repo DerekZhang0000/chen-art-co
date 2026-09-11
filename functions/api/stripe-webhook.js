@@ -186,6 +186,10 @@ function getShippingDetails(session) {
 // into a human-readable string like "Size: Large" - generic over whatever
 // keys are present so future attributes need no changes here.
 function formatAttributes(attributes) {
+  // Both call sites already guard with `item.attributes ? ... : ""` before
+  // calling this, so `attributes` is never falsy here in practice - kept as
+  // a defensive check anyway since this is a shared helper.
+  /* node:coverage ignore next */
   if (!attributes) return "";
   return Object.entries(attributes)
     .map(([key, value]) => `${key.charAt(0).toUpperCase()}${key.slice(1)}: ${value}`)

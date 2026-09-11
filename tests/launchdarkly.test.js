@@ -60,6 +60,74 @@ test("isFlagOn: throws when LaunchDarkly returns an error status (caller decides
   }
 });
 
+// Minimal fake of the Workers/Pages `caches.default` Cache API - just
+// enough of `.match`/`.put` for isFlagOn's cache-hit and cache-write paths.
+function fakeCache() {
+  const store = new Map();
+  return {
+    async match(request) {
+      return store.get(request.url) || undefined;
+    },
+    async put(request, response) {
+      store.set(request.url, response);
+    },
+  };
+}
+
+test("isFlagOn: a cache hit returns the cached value without calling fetch", async () => {
+  const { isFlagOn } = await fnPromise;
+  const originalCaches = globalThis.caches;
+  const originalFetch = globalThis.fetch;
+  let fetchCalled = false;
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    return new Response(JSON.stringify({ "maintenance-mode": { value: false } }), { status: 200 });
+  };
+  const cache = fakeCache();
+  globalThis.caches = { default: cache };
+
+  try {
+    // Prime the cache directly, the way a prior isFlagOn call would have.
+    const cacheKey = new Request("https://ld-flag-cache.internal/client-side-id/maintenance-mode");
+    await cache.put(cacheKey, new Response(JSON.stringify({ value: true })));
+
+    const result = await isFlagOn("client-side-id", "maintenance-mode", fakeContext());
+    assert.equal(result, true);
+    assert.equal(fetchCalled, false);
+  } finally {
+    globalThis.caches = originalCaches;
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("isFlagOn: a fresh fetch is cached via context.waitUntil(cache.put(...))", async () => {
+  const { isFlagOn } = await fnPromise;
+  const originalCaches = globalThis.caches;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ "maintenance-mode": { value: true } }), { status: 200 });
+  const cache = fakeCache();
+  globalThis.caches = { default: cache };
+
+  const waited = [];
+  const context = { waitUntil: (p) => waited.push(p) };
+
+  try {
+    const result = await isFlagOn("client-side-id", "maintenance-mode", context);
+    assert.equal(result, true);
+    assert.equal(waited.length, 1);
+    await waited[0];
+
+    const cacheKey = new Request("https://ld-flag-cache.internal/client-side-id/maintenance-mode");
+    const cached = await cache.match(cacheKey);
+    assert.ok(cached);
+    assert.deepEqual(await cached.json(), { value: true });
+  } finally {
+    globalThis.caches = originalCaches;
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("isFlagOn: requests the client-side ID and a base64url-encoded anonymous context", async () => {
   const { isFlagOn } = await fnPromise;
   const originalFetch = globalThis.fetch;

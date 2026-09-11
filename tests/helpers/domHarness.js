@@ -6,6 +6,7 @@
 // of its markup or wiring.
 const fs = require("node:fs");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 const { JSDOM } = require("jsdom");
 
 const ROOT = path.join(__dirname, "..", "..");
@@ -26,8 +27,12 @@ function createDom(options = {}) {
 
 function injectScripts(dom, scripts) {
   scripts.forEach((relPath) => {
+    const absPath = path.join(ROOT, relPath);
     const script = dom.window.document.createElement("script");
-    script.textContent = readSource(relPath);
+    // The sourceURL comment lets V8 attribute this inline script's stack
+    // traces AND `node --experimental-test-coverage` line/branch coverage
+    // back to the real file on disk, instead of an anonymous VM context.
+    script.textContent = `${readSource(relPath)}\n//# sourceURL=${pathToFileURL(absPath).href}`;
     dom.window.document.body.appendChild(script);
   });
 }

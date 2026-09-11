@@ -3,7 +3,9 @@
   "private": true,
   "description": "Chen Art Co. website - static site with a Cloudflare Pages Function for Stripe checkout.",
   "scripts": {
-    "test": "node --test",
+    "test": "node --test tests/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage tests/*.test.js",
+    "test:integration": "node scripts/run-integration-tests.js",
     "dev": "concurrently -k -n wrangler,stripe -c blue,magenta \"npx.cmd wrangler pages dev .\" \"stripe listen --forward-to localhost:8788/api/stripe-webhook\""
   },
   "devDependencies": {

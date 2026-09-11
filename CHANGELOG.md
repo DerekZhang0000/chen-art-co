@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-11 — 100% Unit Test Coverage & Local Integration Tests
+
+- Unit test suite now measures and hits 100% line/branch/function coverage (`npm run test:coverage`, Node's built-in coverage), closing gaps in error paths, boundary values, and previously-unreachable branches (e.g. the LaunchDarkly response cache, malformed webhook metadata, partial shipping addresses) across both `functions/` and `js/` (206 tests passing).
+- Fixed a coverage-instrumentation gap where `js/main.js`, `js/shop.js`, and `js/notices.js` weren't attributed to real coverage numbers at all when exercised via the jsdom test harness.
+- Added a separate, local-only integration test suite (`npm run test:integration`) that drives a real `wrangler pages dev` process against real local D1 and makes real calls to Stripe (test-mode) and Resend using `.dev.vars` - not part of `npm test`/CI, since it sends real emails and creates real Stripe Checkout Sessions.
+
 ## 2026-09-09 — Order Confirmation Emails, Checkout Hardening & Shop Enhancements
 
 - Buyers now get a branded HTML order-confirmation email (plain-text fallback) via Resend once payment clears; the seller's existing email gained item thumbnails. Both show a full cost breakdown (subtotal, shipping, tax, total) and the shipping address, embed images inline instead of linking to the live site, and send independently of each other.

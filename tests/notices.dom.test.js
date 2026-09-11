@@ -8,6 +8,11 @@ function setup() {
   return dom;
 }
 
+test("notices: exports via module.exports when loaded as a CommonJS module (not just via window)", () => {
+  const { show } = require("../js/notices.js");
+  assert.equal(typeof show, "function");
+});
+
 test("notices: show() renders a dismissible notice with the given message", () => {
   const dom = setup();
   dom.window.ChenNotices.show("checkout-success", "Thanks for your order!");
@@ -47,6 +52,15 @@ test("notices: clicking the close button removes that notice", () => {
   document.querySelector(".notice-close").click();
 
   assert.equal(document.querySelectorAll(".notice").length, 0);
+});
+
+test("notices: clicking the close button twice in a row (already-removed element) does not throw", () => {
+  const dom = setup();
+  dom.window.ChenNotices.show("checkout-success", "Order placed");
+  const closeBtn = dom.window.document.querySelector(".notice-close");
+
+  closeBtn.click();
+  assert.doesNotThrow(() => closeBtn.click());
 });
 
 test("notices: after being dismissed, the same type can be shown again", () => {

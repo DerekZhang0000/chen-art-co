@@ -164,6 +164,31 @@ npm.cmd test
 
 Tests also run automatically on GitHub via Actions on every push and pull request.
 
+Coverage can be checked with:
+
+```
+npm.cmd run test:coverage
+```
+
+## Local integration tests
+
+`npm test` above uses fakes/stubs for everything external (Stripe, Resend, LaunchDarkly, D1). There's a separate, **local-only** integration suite that instead drives a real `wrangler pages dev` process and makes real calls with whatever is in your `.dev.vars`:
+
+```
+npm.cmd run test:integration
+```
+
+**This sends real emails and creates real Stripe objects on every run:**
+- A real Stripe **test-mode** Checkout Session is created (via `STRIPE_SECRET_KEY`).
+- A real seller-notification email AND a real buyer-confirmation email are sent via Resend to the addresses in `SELLER_EMAIL` (via a hand-signed webhook event using `STRIPE_WEBHOOK_SECRET` - no `stripe listen`/Stripe CLI needed).
+- A real "custom order" email is sent via Resend to `SELLER_EMAIL`.
+
+All of these are clearly prefixed `[Integration Test]` in the subject/name so they're easy to spot and ignore in your inbox, and only touch the unlimited-stock `preview-test-item` product, so real seeded inventory is never decremented.
+
+Requires `.dev.vars` to have `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, and `SELLER_EMAIL` set (see the setup sections above) - the script fails fast with a clear message if any are missing. It also runs the one-time local D1 schema/seed step automatically if it hasn't been done yet (see "Running it locally" above), and starts its own `wrangler pages dev` on port 8799 so it won't collide with one you already have running on 8788.
+
+Run this manually and occasionally - it's **not** part of `npm test` and does **not** run in CI, specifically because of the real side effects above.
+
 ## Deploying for free
 
 This site needs a host that supports **serverless functions** (for the Shop's checkout), not just static files:
@@ -195,6 +220,8 @@ functions/api/create-checkout-session.js  Cloudflare Pages Function that creates
 functions/api/stripe-webhook.js         Cloudflare Pages Function that decrements D1 stock on a completed sale
 maintenance.html                        static "down for maintenance" page, served by functions/_middleware.js
 tests/                                  unit tests (run with `npm test`)
+tests/integration/                      local-only integration tests (run with `npm run test:integration` - see "Local integration tests" above)
+scripts/run-integration-tests.js        drives the local integration suite: starts wrangler pages dev + local D1, then runs tests/integration/
 images/                                  photos, video posters, and favicon
 videos/                                  video clips used in the gallery and Process section
 ```

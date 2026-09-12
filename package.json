@@ -8,7 +8,7 @@
     "test:integration": "node scripts/run-integration-tests.js",
     "test:e2e": "node scripts/run-e2e-tests.js",
     "test:e2e:local": "node scripts/run-e2e-tests.js --local",
-    "dev": "concurrently -k -n wrangler,stripe -c blue,magenta \"npx.cmd wrangler pages dev .\" \"stripe listen --forward-to localhost:8788/api/stripe-webhook\""
+    "dev": "concurrently -k -n wrangler,stripe,ngrok -c white,magenta,yellow \"npx.cmd wrangler pages dev .\" \"stripe listen --forward-to localhost:8788/api/stripe-webhook\" \"ngrok http http://127.0.0.1:8788 --log=stdout\""
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

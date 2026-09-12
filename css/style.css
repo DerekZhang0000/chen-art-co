@@ -3,8 +3,8 @@
   --text: #000000;
   --background: #ffffff;
   --primary: #ff0000;
-  --secondary: #22062a;
-  --accent: #a787ac;
+  --secondary: #0e79b2;
+  --accent: #ffffff;
 
   --paper: #faf8f9;
   --line: rgba(0, 0, 0, 0.1);
@@ -182,7 +182,7 @@ section { padding: 96px 0; }
   background: var(--primary);
   color: #fff !important;
   padding: 12px 22px;
-  border-radius: var(--radius);
+  border-radius: 8px;
   font-weight: 600;
   transition: background 0.2s ease;
 }
@@ -322,31 +322,32 @@ section { padding: 96px 0; }
   object-position: center 40%;
   transform: scale(1.25);
   transform-origin: 100% 35%;
-  opacity: 0.62;
 }
 
-.hero::before {
-  content: "";
+.hero-veil {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(34,6,42,0.35) 0%, rgba(34,6,42,0.55) 55%, rgba(34,6,42,0.92) 100%);
-}
-
-/* Narrow viewports stack the heading + lede tall enough to reach the
-   lighter, upper part of the photo the gradient hasn't darkened yet -
-   raise the gradient earlier there so the lede text stays readable. */
-@media (max-width: 640px) {
-  .hero::before {
-    background: linear-gradient(180deg, rgba(34,6,42,0.55) 0%, rgba(34,6,42,0.72) 40%, rgba(34,6,42,0.94) 100%);
-  }
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 42%;
+  z-index: 1;
+  background: color-mix(in srgb, var(--secondary) 25%, transparent);
+  backdrop-filter: blur(2px) brightness(0.9);
+  -webkit-backdrop-filter: blur(2px) brightness(0.9);
 }
 
 .hero-inner {
   position: relative;
   z-index: 2;
-  padding-bottom: 72px;
-  max-width: 520px;
+  padding-bottom: 120px;
+  max-width: 420px;
   margin-left: auto;
+}
+
+@media (min-width: 641px) {
+  .hero-inner {
+    margin-right: -96px;
+  }
 }
 
 .hero h1 {
@@ -354,11 +355,12 @@ section { padding: 96px 0; }
   color: #fff;
   margin-bottom: 0.3em;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
 }
 
 .hero .lede {
   font-size: 1.15rem;
-  color: var(--on-secondary-dim);
+  color: rgba(243, 236, 245, 0.82);
   max-width: 540px;
   margin-bottom: 2em;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
@@ -368,6 +370,67 @@ section { padding: 96px 0; }
 
 .hero-eyebrow {
   color: #fff;
+}
+
+/* Narrow viewports split the hero vertically instead of horizontally:
+   the top portion stays a plain, unfiltered, tightly-cropped view of
+   the shirt, and the veil (with the text on top of it) takes the
+   bottom portion. Placed after the base hero rules so these overrides
+   actually win on mobile instead of being clobbered by them.
+
+   The split is a CSS grid (1fr image row + auto text row) rather than
+   a fixed percentage: the text row always sizes itself to the text's
+   actual height, so the veil can never end up shorter than the text
+   it's supposed to sit behind. A fixed top:46% looked fine in testing
+   but left only a few px of margin on common phone sizes, and on
+   taller/narrower devices (or when the text wraps to an extra line)
+   the heading could start above the veil, over bare unfiltered image. */
+@media (max-width: 640px) {
+  .hero {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: stretch;
+    min-height: 90vh;
+    padding: 0;
+  }
+
+  .hero-media {
+    object-position: 34.6% 50%;
+    transform: scale(1.6);
+    transform-origin: 50% 79.1%;
+  }
+
+  .hero-veil {
+    position: static;
+    grid-row: 2;
+    grid-column: 1;
+    width: 100%;
+    background: color-mix(in srgb, var(--secondary) 45%, transparent);
+  }
+
+  .hero > .container {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  .hero-inner {
+    padding-top: 28px;
+    padding-bottom: 24px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 8vw, 2.6rem);
+  }
+
+  .hero .lede {
+    font-size: 1rem;
+    line-height: 1.45;
+    margin-bottom: 1em;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 0.5em;
+  }
 }
 
 /* ---------- Marquee strip ---------- */
@@ -491,7 +554,6 @@ section { padding: 96px 0; }
   gap: 24px;
 }
 @media (max-width: 860px) { .shop-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; } }
-@media (max-width: 560px) { .shop-grid { grid-template-columns: 1fr; } }
 
 .shop-loading { color: rgba(0,0,0,0.55); }
 
@@ -880,6 +942,11 @@ section { padding: 96px 0; }
 
 /* ---------- About ---------- */
 .about-section { background: var(--paper); }
+
+.accent-link {
+  color: var(--secondary);
+  text-decoration: underline;
+}
 .about-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -907,11 +974,12 @@ section { padding: 96px 0; }
   color: #fff;
   font-size: clamp(1.7rem, 3.4vw, 2.4rem);
   text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  margin-top: 48px;
 }
 .cta-band .btn {
   position: absolute;
   left: 50%;
-  bottom: 12px;
+  bottom: 40px;
   transform: translateX(-50%);
 }
 

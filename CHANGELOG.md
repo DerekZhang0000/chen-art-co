@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-12 — Hero Redesign, Copy Refresh & Dev Tooling
+
+- Hero: replaced the full-bleed dark gradient + dimmed photo with a right-side "veil" panel (a blurred, secondary-color-tinted backdrop) so the shirt photo now shows at full clarity on the left; heading, lede, and buttons repositioned against the veil.
+- Mobile hero: switched from a horizontal to a vertical split (unfiltered photo on top, veil + text below), sized with CSS grid to the text's actual height so the heading can't overflow above the veil on any device.
+- Shop section now shows 2 columns of items on tablet and mobile (previously dropped to a single column below 560px).
+- Nav "Shop" button now has rounded corners instead of the shared 2px site-wide radius.
+- "Got an idea you want stitched?" CTA band: heading nudged down and button nudged up for better vertical balance.
+- Design tokens: `--secondary` changed to blue, `--accent` changed to white.
+- Added an `.accent-link` style (secondary color) for inline text links, used on the About section's "First Fridays" mention.
+- Copy refresh across the hero, intro, shop, gallery, process, and custom-order sections; replaced the About section's placeholder Lorem ipsum with a real founder bio and removed its redundant "Start your piece" button; updated the footer's legal name and tagline.
+- Custom-order steps expanded from 4 to 5, adding a proofing/"Quality Assurance" step and a local-pickup option alongside shipping.
+- Marquee strip now lists a fuller set of categories (Professional Workwear, Fandom and Anime Art, Academic Regalia, Patches, Custom Hats, Team and Club Apparel, Wedding and Bridal Embroidery, Pet Accessories) instead of the original 4.
+- `npm run dev` now also opens an ngrok tunnel to the local Pages dev server, alongside wrangler and the Stripe CLI listener.
+
 ## 2026-09-11 — QA Fixes & Real-Browser Test Layer
 
 - Fixed low mobile contrast on the hero's lede text (strengthened the gradient at narrow viewports, added a text-shadow) - the one real visual bug from a manual QA pass.

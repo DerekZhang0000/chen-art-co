@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Chen Art Co.</title>
+<title>Page not found — Chen Art Co.</title>
 <meta name="robots" content="noindex" />
 
 <link rel="icon" href="images/favicon.ico" sizes="any" />
@@ -12,9 +12,8 @@
 
 <!--
   Deliberately self-contained (inline styles, no external requests other
-  than the logo and favicons, which functions/_middleware.js explicitly
-  allows through during maintenance) - this page is served in place of
-  the whole site while maintenance-mode is on.
+  than the logo and favicons) - Cloudflare Pages serves this automatically,
+  with a real 404 status, for any request that doesn't match a real route.
 -->
 <style>
   :root {
@@ -56,6 +55,19 @@
     margin: 0 0 12px;
   }
   p { margin: 0 0 20px; line-height: 1.6; color: #333333; }
+  .home-link {
+    display: inline-block;
+    margin-bottom: 28px;
+    padding: 12px 28px;
+    border-radius: 6px;
+    background: var(--secondary);
+    color: #ffffff;
+    text-decoration: none;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .home-link:hover { background: #33083f; }
   .contact {
     display: flex;
     align-items: center;
@@ -83,8 +95,9 @@
       <img src="images/logo.png" alt="" />
       <span>Chen Art Co.</span>
     </div>
-    <h1>We'll be back soon!</h1>
-    <p>We're making a few improvements to give you the best experience. Say hi in the meantime:</p>
+    <h1>Page not found</h1>
+    <p>The page you're looking for doesn't exist or may have moved. Double check the link, or head back home.</p>
+    <a class="home-link" href="/">Back to Chen Art Co.</a>
     <div class="contact">
       <a href="https://instagram.com/arts.chen" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">

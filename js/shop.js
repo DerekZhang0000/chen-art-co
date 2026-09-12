@@ -63,7 +63,7 @@
       card.innerHTML =
         '<div class="product-image"><img src="' + product.image + '" alt="' + escapeHtml(product.name) + '" loading="lazy" /></div>' +
         '<div class="product-body">' +
-        "<h4>" + escapeHtml(product.name) + "</h4>" +
+        "<h3>" + escapeHtml(product.name) + "</h3>" +
         '<p class="product-desc">' + escapeHtml(product.description) + "</p>" +
         (product.attributes ? '<p class="product-attributes">' + escapeHtml(formatAttributes(product.attributes)) + "</p>" : "") +
         (soldOut || !isFinite(stock) ? "" : '<span class="product-stock">Only ' + stock + " left</span>") +
@@ -139,6 +139,8 @@
     ids.forEach(function (id) {
       var product = findProduct(id);
       var qty = cart[id];
+      var stock = ChenCart.stockOf(product);
+      var atLimit = qty >= stock;
       subtotal += product.price * qty;
 
       var row = document.createElement("div");
@@ -146,13 +148,13 @@
       row.innerHTML =
         '<img src="' + product.image + '" alt="' + escapeHtml(product.name) + '" />' +
         '<div class="cart-item-body">' +
-        "<h5>" + escapeHtml(product.name) + "</h5>" +
+        "<h4>" + escapeHtml(product.name) + "</h4>" +
         (product.attributes ? '<span class="cart-item-attributes">' + escapeHtml(formatAttributes(product.attributes)) + "</span>" : "") +
         '<span class="cart-item-price">' + formatPrice(product.price) + "</span>" +
         '<div class="cart-item-qty">' +
         '<button type="button" class="qty-btn" data-action="dec" aria-label="Decrease quantity">&minus;</button>' +
         '<span>' + qty + "</span>" +
-        '<button type="button" class="qty-btn" data-action="inc" aria-label="Increase quantity">+</button>' +
+        '<button type="button" class="qty-btn" data-action="inc" aria-label="Increase quantity"' + (atLimit ? " disabled" : "") + ">+</button>" +
         '<button type="button" class="cart-item-remove" data-action="remove">Remove</button>' +
         "</div>" +
         "</div>";
@@ -160,9 +162,11 @@
       row.querySelector('[data-action="dec"]').addEventListener("click", function () {
         setQuantity(id, qty - 1);
       });
-      row.querySelector('[data-action="inc"]').addEventListener("click", function () {
-        setQuantity(id, qty + 1);
-      });
+      if (!atLimit) {
+        row.querySelector('[data-action="inc"]').addEventListener("click", function () {
+          setQuantity(id, qty + 1);
+        });
+      }
       row.querySelector('[data-action="remove"]').addEventListener("click", function () {
         removeFromCart(id);
       });

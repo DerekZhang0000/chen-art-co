@@ -185,6 +185,7 @@ test("shop: drawer quantity +/- respects the stock cap", async () => {
   document.querySelectorAll(".product-add")[0].click(); // in-stock, stock: 2, qty now 1
   document.querySelector('[data-action="inc"]').click(); // qty -> 2 (at stock limit)
   assert.equal(document.querySelector(".cart-item-qty span").textContent, "2");
+  assert.equal(document.querySelector('[data-action="inc"]').disabled, true);
 
   document.querySelector('[data-action="inc"]').click(); // attempt to exceed stock
   assert.equal(document.querySelector(".cart-item-qty span").textContent, "2");

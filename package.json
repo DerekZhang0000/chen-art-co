@@ -6,9 +6,13 @@
     "test": "node --test tests/*.test.js",
     "test:coverage": "node --test --experimental-test-coverage tests/*.test.js",
     "test:integration": "node scripts/run-integration-tests.js",
+    "test:e2e": "node scripts/run-e2e-tests.js",
+    "test:e2e:local": "node scripts/run-e2e-tests.js --local",
     "dev": "concurrently -k -n wrangler,stripe -c blue,magenta \"npx.cmd wrangler pages dev .\" \"stripe listen --forward-to localhost:8788/api/stripe-webhook\""
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "concurrently": "^10.0.5",
     "jsdom": "^25.0.0"
   }

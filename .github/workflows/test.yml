@@ -14,3 +14,18 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm test
+
+  e2e:
+    # windows-latest to match the committed Playwright screenshot baselines
+    # in tests/e2e/**/*-snapshots/ (generated on Windows) - visual
+    # regression snapshots are platform-specific (font rendering differs
+    # enough between OSes that Playwright names them per-platform).
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

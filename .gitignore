@@ -11,6 +11,11 @@ node_modules/
 
 .wrangler/
 
+# Playwright run output (traces, HTML report) - not the committed
+# tests/e2e/**/*-snapshots/ baseline images, which are checked in.
+test-results/
+playwright-report/
+
 # Local secrets for `wrangler pages dev` - never commit real keys
 .dev.vars
 

@@ -6,7 +6,7 @@ A static website for the Chen Art Co embroidery studio, plus a small shop with r
 
 A few placeholders need to be swapped for the real thing:
 
-1. **Contact info** — in `index.html`, search for `hello@chenartco.com` (in the footer) and replace with the real email.
+1. **Contact info** — in `index.html`, search for `Johnc4923@gmail.com` (in the footer, and in `maintenance.html`/`404.html`) and replace with the real, branded email you want live.
 2. **Custom order form** — see "Custom order emails" below.
 3. **Shop / Stripe** — see the "Accepting payments" section below. Without this set up, the Shop section will show real products but checkout will fail with an error.
 4. **Copy** — the "About" section and step-by-step process text are generic placeholders. Swap in real details (turnaround time, pricing if you want to list it, your own story).
@@ -189,6 +189,26 @@ Requires `.dev.vars` to have `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESE
 
 Run this manually and occasionally - it's **not** part of `npm test` and does **not** run in CI, specifically because of the real side effects above.
 
+## Real-browser tests (Playwright)
+
+The suites above run in Node/jsdom - they can't catch real CSS/layout issues, accessibility problems, or visual regressions (e.g. text overlapping a light part of a background photo on mobile). A [Playwright](https://playwright.dev) layer covers that, split into two projects:
+
+```
+npm.cmd run test:e2e
+```
+
+Runs the **`ci`** project (`tests/e2e/`) against a local `wrangler pages dev` + local D1 - no real Stripe/Resend secrets needed (same as the free local-D1 step above). Covers a cart smoke test, an automated accessibility scan ([axe-core](https://www.deque.com/axe/)) at mobile/desktop breakpoints, and visual-regression screenshots of the hero section at a few widths. This is the one that runs in CI on every push/PR (on `windows-latest`, to match the committed screenshot baselines in `tests/e2e/**/*-snapshots/` - Playwright's visual snapshots are platform-specific).
+
+```
+npm.cmd run test:e2e:local
+```
+
+Runs the **`local`** project (`tests/e2e-local/`) - the same "real side effects" philosophy as `test:integration`: it actually clicks Checkout and confirms the browser lands on a real Stripe Checkout page. Requires `STRIPE_SECRET_KEY` in `.dev.vars`. Manual/occasional only, never in CI.
+
+One-time setup (in addition to `npm install`): `npx playwright install chromium`.
+
+If you intentionally change the hero's markup/CSS, regenerate the visual baselines with `npx playwright test --project=ci --update-snapshots` (with `test:e2e`'s server already running) and commit the updated PNGs.
+
 ## Deploying for free
 
 This site needs a host that supports **serverless functions** (for the Shop's checkout), not just static files:
@@ -219,9 +239,15 @@ functions/api/products.js               Cloudflare Pages Function: GET /api/prod
 functions/api/create-checkout-session.js  Cloudflare Pages Function that creates the Stripe Checkout session
 functions/api/stripe-webhook.js         Cloudflare Pages Function that decrements D1 stock on a completed sale
 maintenance.html                        static "down for maintenance" page, served by functions/_middleware.js
+404.html                                static "page not found" page - Cloudflare Pages serves this automatically (with a real 404 status) for unmatched routes
 tests/                                  unit tests (run with `npm test`)
 tests/integration/                      local-only integration tests (run with `npm run test:integration` - see "Local integration tests" above)
+tests/e2e/                              CI-safe Playwright tests (run with `npm run test:e2e` - see "Real-browser tests" above)
+tests/e2e-local/                        local-only real-Stripe Playwright test (run with `npm run test:e2e:local`)
+playwright.config.js                    defines the `ci`/`local` Playwright projects above
 scripts/run-integration-tests.js        drives the local integration suite: starts wrangler pages dev + local D1, then runs tests/integration/
+scripts/run-e2e-tests.js                drives the Playwright suites: starts wrangler pages dev + local D1, then runs the matching project
+scripts/lib/localServer.js              shared wrangler-pages-dev + local-D1 startup/teardown logic used by both scripts above
 images/                                  photos, video posters, and favicon
 videos/                                  video clips used in the gallery and Process section
 ```

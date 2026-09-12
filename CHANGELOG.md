@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-11 — QA Fixes & Real-Browser Test Layer
+
+- Fixed low mobile contrast on the hero's lede text (strengthened the gradient at narrow viewports, added a text-shadow) - the one real visual bug from a manual QA pass.
+- Added a real `404.html` (Cloudflare Pages serves it automatically with a genuine 404 status), replacing the previous default SPA-style 200/homepage fallback for unmatched routes.
+- Cart drawer's "+" quantity button now disables at the stock cap instead of silently no-op'ing.
+- Fixed a few accessibility issues surfaced by the new automated scan below: redundant `alt` text on the logo icon (duplicated adjacent visible text), a heading-level skip (h2 straight to h4/h5 in several sections), and the mobile header's Instagram icon-only link losing its accessible name once its label text is hidden at narrow widths.
+- Removed a dead CSS rule (`video.hero-media`) left over from when the hero used a `<video>`.
+- Fixed stale docs: the README's pre-launch checklist referenced a contact-email placeholder that no longer exists, and the changelog previously stated the test item's price incorrectly.
+- Added a real-browser Playwright test layer (`npm run test:e2e` / `test:e2e:local`) to catch what the jsdom suite structurally can't: a cart smoke test, an axe-core accessibility scan, and visual-regression screenshots of the hero, all running in CI; plus a local-only test that clicks through a real Stripe Checkout session in an actual browser. (One known, accepted gap: `color-contrast` is excluded from the automated scan for now - the brand red doesn't meet AA contrast with white button text, a color decision left for later.)
+
 ## 2026-09-11 — 100% Unit Test Coverage & Local Integration Tests
 
 - Unit test suite now measures and hits 100% line/branch/function coverage (`npm run test:coverage`, Node's built-in coverage), closing gaps in error paths, boundary values, and previously-unreachable branches (e.g. the LaunchDarkly response cache, malformed webhook metadata, partial shipping addresses) across both `functions/` and `js/` (206 tests passing).
@@ -12,7 +22,7 @@
 - Checkout is now card-only with a required billing address, and Link is disabled in the Stripe Dashboard, so every order always has a name, email, and shipping address. Fixed the shipping address not showing up due to this Stripe account's newer API version nesting it under `collected_information`. Enabled Stripe Tax (`automatic_tax`) and added accurate post-payment confirmation text.
 - Products can now carry an optional, modular `attributes` object (e.g. size) shown on the shop page, cart, and both order emails - sizes set for every crewneck.
 - The checkout-success message is now a dismissible popup fixed below the sticky header instead of an inline banner, generalized for future notice types.
-- Test item: price lowered to $0.49, free shipping replaced with a nominal $0.01 charge.
+- Test item: price lowered to $0.50, free shipping replaced with a nominal $0.01 charge.
 - Expanded test coverage across the board (171 tests passing).
 
 ## 2026-09-08 — Shipping Collection & Order Notification Emails

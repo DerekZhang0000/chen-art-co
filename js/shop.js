@@ -64,7 +64,6 @@
         '<div class="product-image"><img src="' + product.image + '" alt="' + escapeHtml(product.name) + '" loading="lazy" /></div>' +
         '<div class="product-body">' +
         "<h3>" + escapeHtml(product.name) + "</h3>" +
-        '<p class="product-desc">' + escapeHtml(product.description) + "</p>" +
         (product.attributes ? '<p class="product-attributes">' + escapeHtml(formatAttributes(product.attributes)) + "</p>" : "") +
         (soldOut || !isFinite(stock) ? "" : '<span class="product-stock">Only ' + stock + " left</span>") +
         '<div class="product-foot">' +

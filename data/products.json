@@ -4,72 +4,72 @@
     "name": "Gojo Satoru Portrait Crewneck",
     "price": 5000,
     "image": "images/anime-shirt.jpg",
-    "description": "Gojo Satoru portrait embroidered in a framed panel on a white crewneck.",
+    "description": "Gojo Satoru portrait embroidered in a framed panel on a crewneck.",
     "stock": 2,
-    "attributes": { "size": "Large" }
+    "attributes": { "size": "Large", "color": "White" }
   },
   {
     "id": "frieren-staff-sword-crewneck-white",
-    "name": "Frieren Staff & Sword Crewneck (White)",
+    "name": "Frieren Staff & Sword Crewneck",
     "price": 5000,
     "image": "images/frieren-staff-and-sword-shirt-1.jpg",
-    "description": "Staff-and-sword crest with blue roses embroidered on a white crewneck.",
+    "description": "Staff-and-sword crest with blue roses embroidered on a crewneck.",
     "stock": 1,
-    "attributes": { "size": "Large" }
+    "attributes": { "size": "Large", "color": "White" }
   },
   {
     "id": "frieren-staff-sword-crewneck-grey",
-    "name": "Frieren Staff & Sword Crewneck (Grey)",
+    "name": "Frieren Staff & Sword Crewneck",
     "price": 5000,
     "image": "images/frieren-staff-and-sword-shirt-2.jpg",
-    "description": "Staff-and-sword crest with blue roses embroidered on a grey crewneck.",
+    "description": "Staff-and-sword crest with blue roses embroidered on a crewneck.",
     "stock": 1,
-    "attributes": { "size": "Medium" }
+    "attributes": { "size": "Medium", "color": "Grey" }
   },
   {
     "id": "frieren-staff-sword-crewneck-navy",
-    "name": "Frieren Staff & Sword Crewneck (Navy Champion)",
+    "name": "Frieren Staff & Sword Crewneck",
     "price": 6700,
     "image": "images/frieren-staff-and-sword-shirt-3.jpg",
-    "description": "Staff-and-sword crest with blue roses embroidered on a navy Champion crewneck.",
+    "description": "Staff-and-sword crest with blue roses embroidered on a crewneck.",
     "stock": 1,
-    "attributes": { "size": "Medium" }
+    "attributes": { "size": "Medium", "color": "Navy", "brand": "Champion" }
   },
   {
     "id": "mahoraga-domain-expansion-tee",
     "name": "Mahoraga Domain Expansion Crewneck",
     "price": 5000,
     "image": "images/mahoraga-low-key-shirt.jpg",
-    "description": "Subtle tone-on-tone Mahoraga emblem embroidered on a black crewneck.",
+    "description": "Subtle tone-on-tone Mahoraga emblem embroidered on a crewneck.",
     "stock": 1,
-    "attributes": { "size": "Large" }
+    "attributes": { "size": "Large", "color": "Black" }
   },
   {
     "id": "mahoraga-wings-crewneck",
     "name": "Mahoraga Wings Crewneck",
     "price": 5000,
     "image": "images/mahoraga-shirt-d.jpg",
-    "description": "Gold crossed-wings emblem embroidered on a black crewneck.",
+    "description": "Gold crossed-wings emblem embroidered on a crewneck.",
     "stock": 1,
-    "attributes": { "size": "Medium" }
+    "attributes": { "size": "Medium", "color": "Black" }
   },
   {
     "id": "six-eyes-crewneck",
     "name": "Six Eyes Crewneck",
     "price": 5000,
     "image": "images/six-eyes-shirt.jpg",
-    "description": "Six embroidered eyes with \"Six Eyes\" lettering on a navy crewneck.",
+    "description": "Six embroidered eyes with \"Six Eyes\" lettering on a crewneck.",
     "stock": 1,
-    "attributes": { "size": "Medium" }
+    "attributes": { "size": "Medium", "color": "Navy" }
   },
   {
     "id": "six-eyes-crewneck-no-text",
     "name": "Six Eyes Crewneck (No Text)",
     "price": 5000,
     "image": "images/six-eyes-shirt-no-text.jpg",
-    "description": "Six embroidered eyes design on a black crewneck.",
+    "description": "Six embroidered eyes design on a crewneck.",
     "stock": 1,
-    "attributes": { "size": "Medium" }
+    "attributes": { "size": "Medium", "color": "Black" }
   },
   {
     "id": "preview-test-item",

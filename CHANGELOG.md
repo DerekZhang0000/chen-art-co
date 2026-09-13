@@ -6,6 +6,7 @@
 - Removed the free-text description from shop product cards; the field still exists in the product data for future use, just isn't rendered.
 - Shop and gallery grids now scroll horizontally on mobile (≤640px), showing 2 rows of items at a time with scroll-snap, instead of wrapping to a static single/double column.
 - Fixed the "Add to cart" button getting clipped on mobile shop cards (tighter card padding/image aspect ratio and adjusted grid column sizing at narrow widths).
+- Replaced the personal Gmail contact address shown on the site (footer, 404, and maintenance pages) with `support@chenart.co`.
 
 ## 2026-09-12 — Hero Redesign, Copy Refresh & Dev Tooling
 
